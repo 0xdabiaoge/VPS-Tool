@@ -3,3 +3,7 @@
 (curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/vps_flow.sh -o /usr/local/bin/sl || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/vps_flow.sh -o /usr/local/bin/sl) && chmod +x /usr/local/bin/sl && sl
 ```
 
+**singbox出口IP切换，快捷命令：sbout**
+```
+(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/singbox-out.sh -o /usr/local/bin/sbout || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/singbox-out.sh -o /usr/local/bin/sbout) && chmod +x /usr/local/bin/sbout && sbout
+```
