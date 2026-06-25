@@ -1,5 +1,5 @@
-**自定义带宽刷流，快捷命令：sb**
+**自定义带宽刷流，快捷命令：sl**
 ```
-(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/singbox-lite/main/singbox.sh -o /usr/local/bin/sb || wget -q https://raw.githubusercontent.com/0xdabiaoge/singbox-lite/main/singbox.sh -O /usr/local/bin/sb) && chmod +x /usr/local/bin/sb && sb
+(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/vps_flow.sh -o /usr/local/bin/sl || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/vps_flow.sh -o /usr/local/bin/sl) && chmod +x /usr/local/bin/sl && sl
 ```
 
