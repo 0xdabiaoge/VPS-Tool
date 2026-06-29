@@ -5,5 +5,5 @@
 
 **singbox出口IP切换，快捷命令：sbout**
 ```
-(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/vps-out-switch.sh -o /usr/local/bin/sbout || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/vps-out-switch.sh -o /usr/local/bin/sbout) && chmod +x /usr/local/bin/sbout && sbout
+(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/singbox-out.sh -o /usr/local/bin/sbout || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/singbox-out.sh -o /usr/local/bin/sbout) && chmod +x /usr/local/bin/sbout && sbout
 ```
