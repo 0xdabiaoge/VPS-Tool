@@ -8,6 +8,9 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 SINGBOX_VERSION="${SINGBOX_VERSION:-latest}"
+SINGBOX_INSTALL_SOURCE="${SINGBOX_INSTALL_SOURCE:-github}"
+SINGBOX_LOCAL_DIR="${SINGBOX_LOCAL_DIR:-/root}"
+SINGBOX_LOCAL_PACKAGE="${SINGBOX_LOCAL_PACKAGE:-}"
 CONF_DIR="/etc/sing-box-out"
 CONF_FILE="$CONF_DIR/config.json"
 LEGACY_CONF_DIR="/etc/sing-box"
@@ -309,12 +312,24 @@ function require_commands() {
 
 function require_install_commands() {
     local missing=()
-    for cmd in curl tar awk sed grep install mktemp uname head; do
+    for cmd in tar awk sed grep install mktemp uname head find ls cp; do
         command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
     done
+    if [ "${SINGBOX_INSTALL_SOURCE:-github}" = "github" ]; then
+        command -v curl >/dev/null 2>&1 || missing+=("curl")
+    fi
     if [ "${#missing[@]}" -gt 0 ]; then
         die "缺少安装 sing-box 所需命令: ${missing[*]}"
     fi
+}
+
+function singbox_arch() {
+    case "$(uname -m)" in
+        x86_64|amd64) printf '%s\n' "amd64" ;;
+        aarch64|arm64) printf '%s\n' "arm64" ;;
+        armv7l) printf '%s\n' "armv7" ;;
+        *) return 1 ;;
+    esac
 }
 
 function resolve_singbox_version() {
@@ -336,6 +351,40 @@ function resolve_singbox_version() {
 function installed_singbox_version() {
     [ -x "$BIN_FILE" ] || return 1
     "$BIN_FILE" version 2>/dev/null | awk 'NR==1 {print $3}'
+}
+
+function version_from_singbox_package() {
+    local package="$1" base
+    base=$(basename -- "$package")
+    printf '%s\n' "$base" | sed -n 's/^sing-box-v\{0,1\}\([0-9][0-9A-Za-z._-]*\)-linux-[^.]*\.tar\.gz$/\1/p'
+}
+
+function find_local_singbox_package() {
+    local arch="$1" requested="${2:-latest}" package version
+    if [ -n "$SINGBOX_LOCAL_PACKAGE" ]; then
+        [ -f "$SINGBOX_LOCAL_PACKAGE" ] || die "指定的本地 sing-box 压缩包不存在: $SINGBOX_LOCAL_PACKAGE"
+        case "$(basename -- "$SINGBOX_LOCAL_PACKAGE")" in
+            *"-linux-${arch}.tar.gz") ;;
+            *) die "本地 sing-box 压缩包架构不匹配，当前机器需要 linux-${arch}: $SINGBOX_LOCAL_PACKAGE" ;;
+        esac
+        printf '%s\n' "$SINGBOX_LOCAL_PACKAGE"
+        return 0
+    fi
+
+    if [ "$requested" != "latest" ]; then
+        version="${requested#v}"
+        package=$(ls -t \
+            "$SINGBOX_LOCAL_DIR/sing-box-${version}-linux-${arch}.tar.gz" \
+            "$SINGBOX_LOCAL_DIR/sing-box-v${version}-linux-${arch}.tar.gz" \
+            2>/dev/null | head -1)
+        [ -n "$package" ] || die "未在 $SINGBOX_LOCAL_DIR 找到 sing-box v${version} 的 linux-${arch} 压缩包。"
+        printf '%s\n' "$package"
+        return 0
+    fi
+
+    package=$(ls -t "$SINGBOX_LOCAL_DIR"/sing-box-*-linux-"${arch}".tar.gz 2>/dev/null | head -1)
+    [ -n "$package" ] || die "未在 $SINGBOX_LOCAL_DIR 找到 sing-box-*-linux-${arch}.tar.gz。请先上传官方压缩包到该目录。"
+    printf '%s\n' "$package"
 }
 
 function version_ge() {
@@ -396,7 +445,7 @@ function check_status() {
     if [ -f "$META_FILE" ]; then
         echo
         echo "部署参数:"
-        grep -E '^(PROTOCOL|PROXY_HOST|PROXY_PORT|WAN_IFACE|DDNS_INTERVAL|SSH_PORT|ENABLE_SPLIT|PROXY_SOURCE_CIDRS|PROXY_HOST_TRAFFIC|SINGBOX_VERSION|VLESS_TLS|VLESS_SERVER_NAME|VLESS_ALPN|VLESS_FLOW)=' "$META_FILE" 2>/dev/null | sed 's/^/  /'
+        grep -E '^(PROTOCOL|PROXY_HOST|PROXY_PORT|WAN_IFACE|DDNS_INTERVAL|SSH_PORT|ENABLE_SPLIT|PROXY_SOURCE_CIDRS|PROXY_HOST_TRAFFIC|SINGBOX_VERSION|SINGBOX_INSTALL_SOURCE|SINGBOX_LOCAL_PACKAGE|VLESS_TLS|VLESS_SERVER_NAME|VLESS_ALPN|VLESS_FLOW)=' "$META_FILE" 2>/dev/null | sed 's/^/  /'
     fi
 
     if [ -f "$STATE_FILE" ]; then
@@ -586,53 +635,99 @@ function prompt_singbox_version() {
     SINGBOX_VERSION=${SINGBOX_VERSION:-latest}
 }
 
+function prompt_singbox_install_source() {
+    local source_choice package_choice
+    echo "安装来源:"
+    echo " 1. GitHub 官方 release 下载 (默认)"
+    echo " 2. 本地 /root 目录下的 sing-box 压缩包"
+    read -r -p "请选择安装来源 (1-2，默认: 1): " source_choice
+    case "${source_choice:-1}" in
+        1)
+            SINGBOX_INSTALL_SOURCE="github"
+            SINGBOX_LOCAL_PACKAGE=""
+            ;;
+        2)
+            SINGBOX_INSTALL_SOURCE="local"
+            read -r -p "本地压缩包路径 (默认自动检测 /root/sing-box-*-linux-当前架构.tar.gz): " package_choice
+            SINGBOX_LOCAL_PACKAGE=${package_choice:-}
+            ;;
+        *) die "安装来源选择无效。" ;;
+    esac
+}
+
 function install_singbox_interactive() {
+    prompt_singbox_install_source
     prompt_singbox_version
     install_singbox
 }
 
 function install_singbox() {
-    local arch file_name tar_name url proxy_url tmp_dir target_version installed_version
+    local arch file_name tar_name url proxy_url tmp_dir target_version installed_version package source extracted_bin
     require_install_commands
-    target_version=$(resolve_singbox_version "$SINGBOX_VERSION") || die "无法解析 sing-box 目标版本: $SINGBOX_VERSION"
-    version_ge "$target_version" "1.12.0" || die "当前配置要求 sing-box >= 1.12.0，请使用 latest 或指定 1.12.0 以上版本。"
+    source=${SINGBOX_INSTALL_SOURCE:-github}
+    [ "$source" = "github" ] || [ "$source" = "local" ] || die "SINGBOX_INSTALL_SOURCE 只能是 github 或 local。"
+    arch=$(singbox_arch) || die "暂不支持的架构: $(uname -m)"
+
+    tmp_dir=$(mktemp -d)
     installed_version=$(installed_singbox_version || true)
 
-    if [ -n "$installed_version" ] && [ "$installed_version" = "$target_version" ]; then
-        info "Sing-box v${target_version} 已安装，无需重复下载。"
-        return 0
+    if [ "$source" = "local" ]; then
+        package=$(find_local_singbox_package "$arch" "$SINGBOX_VERSION")
+        target_version=$(version_from_singbox_package "$package")
+        [ -n "$target_version" ] || {
+            rm -rf "$tmp_dir"
+            die "无法从压缩包文件名解析 sing-box 版本: $package"
+        }
+        tar_name=$(basename -- "$package")
+        file_name="${tar_name%.tar.gz}"
+        echo -e "安装来源: ${GREEN}本地压缩包${NC}"
+        echo "本地压缩包: $package"
+        cp "$package" "$tmp_dir/$tar_name" || {
+            rm -rf "$tmp_dir"
+            die "复制本地压缩包失败。"
+        }
+    else
+        target_version=$(resolve_singbox_version "$SINGBOX_VERSION") || {
+            rm -rf "$tmp_dir"
+            die "无法解析 sing-box 目标版本: $SINGBOX_VERSION"
+        }
+        file_name="sing-box-${target_version}-linux-${arch}"
+        tar_name="${file_name}.tar.gz"
+        url="https://github.com/SagerNet/sing-box/releases/download/v${target_version}/${tar_name}"
+        proxy_url="https://mirror.ghproxy.com/${url}"
+        echo -e "安装来源: ${GREEN}GitHub release${NC}"
+        echo "开始下载: $url"
+        if ! curl -fL --connect-timeout 20 --retry 2 -o "$tmp_dir/$tar_name" "$url"; then
+            warn "直接下载失败，尝试使用代理镜像下载..."
+            curl -fL --connect-timeout 20 --retry 2 -o "$tmp_dir/$tar_name" "$proxy_url" || {
+                rm -rf "$tmp_dir"
+                die "下载失败，请检查网络连接，或选择本地压缩包安装。"
+            }
+        fi
     fi
 
-    arch="amd64"
-    case "$(uname -m)" in
-        x86_64|amd64) arch="amd64" ;;
-        aarch64|arm64) arch="arm64" ;;
-        armv7l) arch="armv7" ;;
-        *) die "暂不支持的架构: $(uname -m)" ;;
-    esac
-
-    file_name="sing-box-${target_version}-linux-${arch}"
-    tar_name="${file_name}.tar.gz"
-    url="https://github.com/SagerNet/sing-box/releases/download/v${target_version}/${tar_name}"
-    proxy_url="https://mirror.ghproxy.com/${url}"
-    tmp_dir=$(mktemp -d)
+    version_ge "$target_version" "1.12.0" || {
+        rm -rf "$tmp_dir"
+        die "当前配置要求 sing-box >= 1.12.0，请使用 1.12.0 以上版本。"
+    }
 
     echo -e "目标版本: ${GREEN}${target_version}${NC}"
     [ -n "$installed_version" ] && echo "当前版本: $installed_version"
-    echo "开始下载: $url"
-    if ! curl -fL --connect-timeout 20 --retry 2 -o "$tmp_dir/$tar_name" "$url"; then
-        warn "直接下载失败，尝试使用代理镜像下载..."
-        curl -fL --connect-timeout 20 --retry 2 -o "$tmp_dir/$tar_name" "$proxy_url" || {
-            rm -rf "$tmp_dir"
-            die "下载失败，请检查网络连接。"
-        }
+    if [ -n "$installed_version" ] && [ "$installed_version" = "$target_version" ]; then
+        rm -rf "$tmp_dir"
+        info "Sing-box v${target_version} 已安装，无需重复安装。"
+        return 0
     fi
 
     tar -xzf "$tmp_dir/$tar_name" -C "$tmp_dir" || {
         rm -rf "$tmp_dir"
         die "解压失败，下载文件可能损坏。"
     }
-    [ -f "$tmp_dir/$file_name/sing-box" ] || {
+    extracted_bin="$tmp_dir/$file_name/sing-box"
+    if [ ! -f "$extracted_bin" ]; then
+        extracted_bin=$(find "$tmp_dir" -mindepth 2 -maxdepth 3 -type f -name sing-box 2>/dev/null | head -1)
+    fi
+    [ -f "$extracted_bin" ] || {
         rm -rf "$tmp_dir"
         die "压缩包内未找到 sing-box 二进制。"
     }
@@ -641,7 +736,7 @@ function install_singbox() {
         rm -rf "$tmp_dir"
         die "创建运行目录失败。"
     }
-    install -m 0755 "$tmp_dir/$file_name/sing-box" "$BIN_FILE"
+    install -m 0755 "$extracted_bin" "$BIN_FILE"
     rm -rf "$tmp_dir"
     info "Sing-box v${target_version} 安装/更新成功。"
 }
@@ -890,6 +985,8 @@ DDNS_INTERVAL=$DDNS_INTERVAL
 SSH_PORT=$SSH_PORT
 SSH_CLIENT_IP=$SSH_CLIENT_IP
 SINGBOX_VERSION=$SINGBOX_VERSION
+SINGBOX_INSTALL_SOURCE=$SINGBOX_INSTALL_SOURCE
+SINGBOX_LOCAL_PACKAGE=$SINGBOX_LOCAL_PACKAGE
 VLESS_UUID=${VLESS_UUID:-}
 VLESS_TLS=${VLESS_TLS:-}
 VLESS_SERVER_NAME=${VLESS_SERVER_NAME:-}
@@ -1393,13 +1490,16 @@ function interactive_config() {
 
     echo
     echo -e "${BLUE}=== 6. Sing-box 核心版本 ===${NC}"
+    prompt_singbox_install_source
     prompt_singbox_version
 }
 
 function load_env_config() {
-    local saved_wan saved_singbox_version
+    local saved_wan saved_singbox_version saved_singbox_install_source saved_singbox_local_package
     saved_wan=$(saved_meta_value WAN_IFACE 2>/dev/null || true)
     saved_singbox_version=$(saved_meta_value SINGBOX_VERSION 2>/dev/null || true)
+    saved_singbox_install_source=$(saved_meta_value SINGBOX_INSTALL_SOURCE 2>/dev/null || true)
+    saved_singbox_local_package=$(saved_meta_value SINGBOX_LOCAL_PACKAGE 2>/dev/null || true)
     if [ -n "${WAN_IFACE:-}" ]; then
         :
     elif is_wan_candidate "$saved_wan"; then
@@ -1418,6 +1518,8 @@ function load_env_config() {
     SSH_PORT=${SSH_PORT:-$(detect_ssh_port)}
     SSH_CLIENT_IP=${SSH_CLIENT_IP:-$(detect_ssh_client_ip)}
     SINGBOX_VERSION=${SINGBOX_VERSION:-${saved_singbox_version:-latest}}
+    SINGBOX_INSTALL_SOURCE=${SINGBOX_INSTALL_SOURCE:-${saved_singbox_install_source:-github}}
+    SINGBOX_LOCAL_PACKAGE=${SINGBOX_LOCAL_PACKAGE:-${saved_singbox_local_package:-}}
     VLESS_UUID=${VLESS_UUID:-${PROXY_UUID:-${UUID:-}}}
     VLESS_TLS=${VLESS_TLS:-false}
     VLESS_SERVER_NAME=${VLESS_SERVER_NAME:-}
@@ -1432,6 +1534,7 @@ function load_env_config() {
     [ "$PROXY_HOST_TRAFFIC" = "true" ] || [ "$PROXY_HOST_TRAFFIC" = "false" ] || die "PROXY_HOST_TRAFFIC 只能是 true 或 false。"
     [[ "$DDNS_INTERVAL" =~ ^[0-9]+$ ]] && [ "$DDNS_INTERVAL" -ge 5 ] || die "DDNS_INTERVAL 不能小于 5。"
     validate_port "$SSH_PORT" || die "SSH_PORT 无效。"
+    [ "$SINGBOX_INSTALL_SOURCE" = "github" ] || [ "$SINGBOX_INSTALL_SOURCE" = "local" ] || die "SINGBOX_INSTALL_SOURCE 只能是 github 或 local。"
 
     if [ "$PROTOCOL" = "shadowsocks" ]; then
         [ -n "$PROXY_PASS" ] || die "Shadowsocks 需要 PROXY_PASS。"
