@@ -12,3 +12,8 @@
 ```
 (curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/incus-nezha.sh -o /usr/local/bin/nzpj || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/incus-nezha.sh -o /usr/local/bin/nzpj) && chmod +x /usr/local/bin/nzpj && nzpj
 ```
+
+**TC限速：tc**
+```
+(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/tc_limit.sh.sh -o /usr/local/bin/tc || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/tc_limit.sh.sh -o /usr/local/bin/tc) && chmod +x /usr/local/bin/tc && tc
+```
