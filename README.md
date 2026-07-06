@@ -15,5 +15,9 @@
 
 **TC限速：tc**
 ```
-(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/tc_limit.sh.sh -o /usr/local/bin/tc || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/tc_limit.sh.sh -o /usr/local/bin/tc) && chmod +x /usr/local/bin/tc && tc
+(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/tc_limit.sh -o /usr/local/bin/tc || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/tc_limit.sh -o /usr/local/bin/tc) && chmod +x /usr/local/bin/tc && tc
+```
+**DDNS域名设置：cfddns**
+```
+(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/Cloudflare-DDNS.sh -o /usr/local/bin/cfddns || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/Cloudflare-DDNS.sh -o /usr/local/bin/cfddns) && chmod +x /usr/local/bin/cfddns && cfddns
 ```
