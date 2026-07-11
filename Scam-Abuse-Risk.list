@@ -1,0 +1,2024 @@
+# Scam / Abuse Risk Application Ruleset
+# 用途：辅助识别经常被诈骗、洗钱、社交工程或远程控制滥用的正规服务流量。
+# 注意：命中仅表示应用流量，不代表用户、账户或通信内容存在违法行为。
+# 不应单独依据本文件自动封禁、定罪或认定诈骗。
+# 中国大陆应用与服务依照项目当前策略排除。
+# Telegram CIDR source: https://core.telegram.org/resources/cidr.txt
+# Research: FBI IC3 2024 Annual Report; U.S. FTC scam guidance.
+# Generated: 2026-07-12
+# Rules: 1534; scenarios: 3
+
+# ==============================================================================
+# 风险场景：金融、支付与数字资产（31 个应用/规则集，741 条）
+# ==============================================================================
+
+# ############################################################################
+# 应用：binance（39 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（39 条）---
+DOMAIN-SUFFIX,aad90d5c0e88c4b4285bd912f64d970d-1403944741.ap-northeast-1.elb.amazonaws.com
+DOMAIN-SUFFIX,accounts.binance.com
+DOMAIN-SUFFIX,accounts.binance.info
+DOMAIN-SUFFIX,accounts.binance.me
+DOMAIN-SUFFIX,addfd325e6e3.cdn4.forter.com
+DOMAIN-SUFFIX,api.binance.com
+DOMAIN-SUFFIX,bin.bnbstatic.com
+DOMAIN-SUFFIX,binance.click
+DOMAIN-SUFFIX,binance.com
+DOMAIN-SUFFIX,binance.info
+DOMAIN-SUFFIX,bnappweb.biz
+DOMAIN-SUFFIX,bnliveplay-ag.bblivestream.com
+DOMAIN-SUFFIX,bsappapi.com
+DOMAIN-SUFFIX,bscdnweb.com
+DOMAIN-SUFFIX,cdn.forter.com
+DOMAIN-SUFFIX,cdn4.forter.com
+DOMAIN-SUFFIX,dstream.binance.com
+DOMAIN-SUFFIX,dstream.binance.info
+DOMAIN-SUFFIX,edge-api.saasexch.com
+DOMAIN-SUFFIX,fapi.binance.com
+DOMAIN-SUFFIX,fapibak.binance.com
+DOMAIN-SUFFIX,fe4385362baa.20414af6.ap-northeast-1.token.awswaf.com
+DOMAIN-SUFFIX,fmbxlntehddr.oss-cn-shenzhen.aliyuncs.com
+DOMAIN-SUFFIX,fstream.binance.com
+DOMAIN-SUFFIX,fstream.binance.info
+DOMAIN-SUFFIX,log.bntrace.com
+DOMAIN-SUFFIX,m.api.forter.com
+DOMAIN-SUFFIX,native.binance.com
+DOMAIN-SUFFIX,native.binance.info
+DOMAIN-SUFFIX,nbstream.binance.com
+DOMAIN-SUFFIX,nbstream.binance.info
+DOMAIN-SUFFIX,public.bnbstatic.com
+DOMAIN-SUFFIX,public.nftstatic.com
+DOMAIN-SUFFIX,saasexch.info
+DOMAIN-SUFFIX,static.tylhh.net
+DOMAIN-SUFFIX,stream.binance.com
+DOMAIN-SUFFIX,stream.binance.info
+DOMAIN-SUFFIX,themis.binance.com
+DOMAIN-SUFFIX,themis.binance.info
+
+# ############################################################################
+# 应用：Binance（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,bnappzh.co
+DOMAIN-SUFFIX,bnbzh.ac
+
+# ############################################################################
+# 应用：binance ip（17 条）
+# ############################################################################
+
+# --- IP-CIDR：IPv4 网段（17 条）---
+IP-CIDR,120.24.233.0/24
+IP-CIDR,13.192.72.8/32
+IP-CIDR,35.201.164.131/32
+IP-CIDR,35.77.148.0/24
+IP-CIDR,43.174.242.227/32
+IP-CIDR,47.106.171.207/32
+IP-CIDR,47.107.178.148/32
+IP-CIDR,47.107.244.13/32
+IP-CIDR,47.107.254.227/32
+IP-CIDR,47.107.95.138/32
+IP-CIDR,52.198.187.114/32
+IP-CIDR,52.68.117.0/24
+IP-CIDR,54.150.106.0/24
+IP-CIDR,54.65.161.3/32
+IP-CIDR,8.129.0.63/32
+IP-CIDR,8.129.229.35/32
+IP-CIDR,8.129.7.254/32
+
+# ############################################################################
+# 应用：bitget（53 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（53 条）---
+DOMAIN-SUFFIX,abcdstable.com
+DOMAIN-SUFFIX,airbrake.io
+DOMAIN-SUFFIX,alchemy.com
+DOMAIN-SUFFIX,amazontrust.com
+DOMAIN-SUFFIX,arbitrum.io
+DOMAIN-SUFFIX,bgstatic.com
+DOMAIN-SUFFIX,bitapi.vip
+DOMAIN-SUFFIX,bitget.com
+DOMAIN-SUFFIX,bitgetapp.com
+DOMAIN-SUFFIX,bitgetapps.com
+DOMAIN-SUFFIX,bitgetimg.com
+DOMAIN-SUFFIX,bitgettr.com
+DOMAIN-SUFFIX,bitkeep.app
+DOMAIN-SUFFIX,bitkeep.asia
+DOMAIN-SUFFIX,bitkeep.biz
+DOMAIN-SUFFIX,bitkeep.com
+DOMAIN-SUFFIX,bitkeep.fun
+DOMAIN-SUFFIX,bitkeep.life
+DOMAIN-SUFFIX,bitkeep.top
+DOMAIN-SUFFIX,bitkeep.vip
+DOMAIN-SUFFIX,bjxnyj.com
+DOMAIN-SUFFIX,bwb.global
+DOMAIN-SUFFIX,bwb.online
+DOMAIN-SUFFIX,chainnear.com
+DOMAIN-SUFFIX,eidtokencloud.com
+DOMAIN-SUFFIX,engagelab.cc
+DOMAIN-SUFFIX,engagelab.com
+DOMAIN-SUFFIX,fiat24.com
+DOMAIN-SUFFIX,gdrichem.com
+DOMAIN-SUFFIX,geetest.com
+DOMAIN-SUFFIX,gm816.com
+DOMAIN-SUFFIX,gurenla.com
+DOMAIN-SUFFIX,hdmune.cn
+DOMAIN-SUFFIX,jjdsn.vip
+DOMAIN-SUFFIX,krbitget.com
+DOMAIN-SUFFIX,ljhsnzpc.com
+DOMAIN-SUFFIX,lymryy.com
+DOMAIN-SUFFIX,marqeta.com
+DOMAIN-SUFFIX,megacheck.net
+DOMAIN-SUFFIX,megacheck.vip
+DOMAIN-SUFFIX,nlviwq.cn
+DOMAIN-SUFFIX,noxiaohao.com
+DOMAIN-SUFFIX,paydify.com
+DOMAIN-SUFFIX,rapidssl.com
+DOMAIN-SUFFIX,sbxgh.top
+DOMAIN-SUFFIX,spindlembed.com
+DOMAIN-SUFFIX,ss2.us
+DOMAIN-SUFFIX,turingfraud.net
+DOMAIN-SUFFIX,web3modal.org
+DOMAIN-SUFFIX,wwmxd.fun
+DOMAIN-SUFFIX,wwmxd.org
+DOMAIN-SUFFIX,wwmxd.shop
+DOMAIN-SUFFIX,zysh.xyz
+
+# ############################################################################
+# 应用：bitget ip（23 条）
+# ############################################################################
+
+# --- IP-CIDR：IPv4 网段（23 条）---
+IP-CIDR,101.46.11.9/32
+IP-CIDR,119.13.110.238/32
+IP-CIDR,119.13.92.114/32
+IP-CIDR,119.8.125.241/32
+IP-CIDR,119.8.165.113/32
+IP-CIDR,124.243.137.219/32
+IP-CIDR,124.243.146.4/32
+IP-CIDR,159.138.84.20/32
+IP-CIDR,159.138.87.239/32
+IP-CIDR,166.108.204.224/32
+IP-CIDR,166.108.229.209/32
+IP-CIDR,183.87.34.6/32
+IP-CIDR,202.170.94.22/32
+IP-CIDR,43.132.43.43/32
+IP-CIDR,43.132.55.55/32
+IP-CIDR,47.106.218.246/32
+IP-CIDR,49.0.203.96/32
+IP-CIDR,49.0.207.201/32
+IP-CIDR,8.129.31.152/32
+IP-CIDR,8.212.117.80/32
+IP-CIDR,8.212.49.105/32
+IP-CIDR,8.223.13.0/24
+IP-CIDR,8.223.3.232/32
+
+# ############################################################################
+# 应用：bookmap（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,bookmap.com
+DOMAIN-SUFFIX,linodeusercontent.com
+
+# ############################################################################
+# 应用：bookmap ip（19 条）
+# ############################################################################
+
+# --- IP-CIDR：IPv4 网段（19 条）---
+IP-CIDR,104.105.137.170/32
+IP-CIDR,104.105.137.20/32
+IP-CIDR,172.104.0.0/16
+IP-CIDR,172.104.89.0/24
+IP-CIDR,172.233.80.95/32
+IP-CIDR,172.237.14.107/32
+IP-CIDR,172.237.14.229/32
+IP-CIDR,172.237.21.41/32
+IP-CIDR,172.237.4.247/32
+IP-CIDR,172.237.5.130/32
+IP-CIDR,172.237.7.239/32
+IP-CIDR,172.237.7.60/32
+IP-CIDR,172.238.11.108/32
+IP-CIDR,172.238.12.14/32
+IP-CIDR,172.238.15.21/32
+IP-CIDR,172.238.20.7/32
+IP-CIDR,172.238.24.9/32
+IP-CIDR,172.238.6.43/32
+IP-CIDR,173.194.203.0/24
+
+# ############################################################################
+# 应用：bybit（45 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（45 条）---
+DOMAIN-SUFFIX,a.run.app
+DOMAIN-SUFFIX,aptoslabs.com
+DOMAIN-SUFFIX,aptosnames.com
+DOMAIN-SUFFIX,basescan.org
+DOMAIN-SUFFIX,btrscan.com
+DOMAIN-SUFFIX,byabcd.com
+DOMAIN-SUFFIX,byabcde.com
+DOMAIN-SUFFIX,byapis.com
+DOMAIN-SUFFIX,byapps.net
+DOMAIN-SUFFIX,bybdc6.com
+DOMAIN-SUFFIX,bybit-aws.com
+DOMAIN-SUFFIX,bybit-exchange.github.io
+DOMAIN-SUFFIX,bybit.ada.support
+DOMAIN-SUFFIX,bybit.biz
+DOMAIN-SUFFIX,bybit.cloud
+DOMAIN-SUFFIX,bybit.com
+DOMAIN-SUFFIX,bybitgeorgia.ge
+DOMAIN-SUFFIX,bycbe.com
+DOMAIN-SUFFIX,bycsi.com
+DOMAIN-SUFFIX,byd3c3.com
+DOMAIN-SUFFIX,bymj.io
+DOMAIN-SUFFIX,bynbc.com
+DOMAIN-SUFFIX,coinall.ltd
+DOMAIN-SUFFIX,coingecko.com
+DOMAIN-SUFFIX,coinmarketcap.com
+DOMAIN-SUFFIX,creativecdn.com
+DOMAIN-SUFFIX,dappradar.com
+DOMAIN-SUFFIX,ffbbbdc6d3c353211fe2ba39c9f744cd.com
+DOMAIN-SUFFIX,ffe390afd658c19dcbf707e0597b846d.de
+DOMAIN-SUFFIX,g9904216750.co
+DOMAIN-SUFFIX,geckoterminal.com
+DOMAIN-SUFFIX,herokuapp.com
+DOMAIN-SUFFIX,jbybit.com
+DOMAIN-SUFFIX,mgid.com
+DOMAIN-SUFFIX,ng-dex.com
+DOMAIN-SUFFIX,niubit.io
+DOMAIN-SUFFIX,online-metrix.net
+DOMAIN-SUFFIX,panora.exchange
+DOMAIN-SUFFIX,smartadserver.com
+DOMAIN-SUFFIX,sumsub.com
+DOMAIN-SUFFIX,triple.app
+DOMAIN-SUFFIX,tronads.io
+DOMAIN-SUFFIX,tronscan.org
+DOMAIN-SUFFIX,website-files.com
+DOMAIN-SUFFIX,wsot2022.com
+
+# ############################################################################
+# 应用：bybit ip（23 条）
+# ############################################################################
+
+# --- IP-CIDR：IPv4 网段（23 条）---
+IP-CIDR,104.116.243.0/24
+IP-CIDR,104.70.124.203/32
+IP-CIDR,124.156.229.180/32
+IP-CIDR,13.32.121.6/32
+IP-CIDR,13.33.187.108/32
+IP-CIDR,138.113.104.63/32
+IP-CIDR,138.113.105.86/32
+IP-CIDR,142.251.215.234/32
+IP-CIDR,150.109.230.182/32
+IP-CIDR,18.228.108.163/32
+IP-CIDR,218.58.101.229/32
+IP-CIDR,3.160.150.37/32
+IP-CIDR,43.133.182.94/32
+IP-CIDR,43.133.238.145/32
+IP-CIDR,43.133.241.84/32
+IP-CIDR,43.135.121.179/32
+IP-CIDR,43.153.238.13/32
+IP-CIDR,43.154.61.67/32
+IP-CIDR,43.160.158.108/32
+IP-CIDR,43.163.16.186/32
+IP-CIDR,43.167.223.175/32
+IP-CIDR,43.175.52.8/32
+IP-CIDR,54.233.163.254/32
+
+# ############################################################################
+# 应用：category cryptocurrency（165 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（6 条）---
+DOMAIN,bybit-exchange.github.io
+DOMAIN,bybit.ada.support
+DOMAIN,d3r7nsslvs6aaf.cloudfront.net
+DOMAIN,deribit.cdn.prismic.io
+DOMAIN,onekey.zendesk.com
+DOMAIN,straitsx-826709081262441084-b790f87a2ae6fd417434295.freshchat.com
+
+# --- DOMAIN-SUFFIX：域名后缀（159 条）---
+DOMAIN-SUFFIX,1inch.io
+DOMAIN-SUFFIX,aave.com
+DOMAIN-SUFFIX,appsflayer.com
+DOMAIN-SUFFIX,asproex.com
+DOMAIN-SUFFIX,asproexapi.com
+DOMAIN-SUFFIX,binance.cc
+DOMAIN-SUFFIX,binance.charity
+DOMAIN-SUFFIX,binance.cloud
+DOMAIN-SUFFIX,binance.co
+DOMAIN-SUFFIX,binance.me
+DOMAIN-SUFFIX,binance.net
+DOMAIN-SUFFIX,binance.org
+DOMAIN-SUFFIX,binance.us
+DOMAIN-SUFFIX,binance.vision
+DOMAIN-SUFFIX,binanceapi.com
+DOMAIN-SUFFIX,binancecnt.com
+DOMAIN-SUFFIX,binanceru.net
+DOMAIN-SUFFIX,binancezh.be
+DOMAIN-SUFFIX,binancezh.biz
+DOMAIN-SUFFIX,binancezh.cc
+DOMAIN-SUFFIX,binancezh.co
+DOMAIN-SUFFIX,binancezh.com
+DOMAIN-SUFFIX,binancezh.info
+DOMAIN-SUFFIX,binancezh.ink
+DOMAIN-SUFFIX,binancezh.kim
+DOMAIN-SUFFIX,binancezh.link
+DOMAIN-SUFFIX,binancezh.live
+DOMAIN-SUFFIX,binancezh.mobi
+DOMAIN-SUFFIX,binancezh.net
+DOMAIN-SUFFIX,binancezh.pro
+DOMAIN-SUFFIX,binancezh.sh
+DOMAIN-SUFFIX,binancezh.top
+DOMAIN-SUFFIX,bingx.com
+DOMAIN-SUFFIX,bisq.io
+DOMAIN-SUFFIX,bisq.network
+DOMAIN-SUFFIX,bitbank.cc
+DOMAIN-SUFFIX,bitcoin.org
+DOMAIN-SUFFIX,bitcoincore.org
+DOMAIN-SUFFIX,bitfinex.com
+DOMAIN-SUFFIX,bitflyer.com
+DOMAIN-SUFFIX,bitflyer.jp
+DOMAIN-SUFFIX,bitmex.com
+DOMAIN-SUFFIX,bitquick.co
+DOMAIN-SUFFIX,bitsquare.io
+DOMAIN-SUFFIX,bitstamp.net
+DOMAIN-SUFFIX,bittrex.com
+DOMAIN-SUFFIX,blockchain.com
+DOMAIN-SUFFIX,blockfrost.io
+DOMAIN-SUFFIX,bnbstatic.com
+DOMAIN-SUFFIX,bntrace.com
+DOMAIN-SUFFIX,btcbox.co.jp
+DOMAIN-SUFFIX,bybit-global.com
+DOMAIN-SUFFIX,bybitglobal.com
+DOMAIN-SUFFIX,bytick.com
+DOMAIN-SUFFIX,cex.io
+DOMAIN-SUFFIX,clearpool.finance
+DOMAIN-SUFFIX,coinalyze.net
+DOMAIN-SUFFIX,coinbase.com
+DOMAIN-SUFFIX,coindesk.com
+DOMAIN-SUFFIX,coinglass.com
+DOMAIN-SUFFIX,coinmap.org
+DOMAIN-SUFFIX,coinone.co.kr
+DOMAIN-SUFFIX,coinonecore.com
+DOMAIN-SUFFIX,coinonecorp.com
+DOMAIN-SUFFIX,crypto.com
+DOMAIN-SUFFIX,cryptocompare.com
+DOMAIN-SUFFIX,cryptomus.com
+DOMAIN-SUFFIX,curve.fi
+DOMAIN-SUFFIX,cyberx.com
+DOMAIN-SUFFIX,debank.com
+DOMAIN-SUFFIX,deribit.com
+DOMAIN-SUFFIX,devcon.org
+DOMAIN-SUFFIX,dogecoin.com
+DOMAIN-SUFFIX,dydx.exchange
+DOMAIN-SUFFIX,ethereum.foundation
+DOMAIN-SUFFIX,ethereum.org
+DOMAIN-SUFFIX,etherscan.io
+DOMAIN-SUFFIX,fundingrates.xyz
+DOMAIN-SUFFIX,gate.io
+DOMAIN-SUFFIX,gatedata.org
+DOMAIN-SUFFIX,gateimg.com
+DOMAIN-SUFFIX,gateio.live
+DOMAIN-SUFFIX,gateio.services
+DOMAIN-SUFFIX,gemini.com
+DOMAIN-SUFFIX,gmgn.ai
+DOMAIN-SUFFIX,guardarian.com
+DOMAIN-SUFFIX,hashflow.com
+DOMAIN-SUFFIX,hbabit.com
+DOMAIN-SUFFIX,hbfile.net
+DOMAIN-SUFFIX,htx.com
+DOMAIN-SUFFIX,huobi.com
+DOMAIN-SUFFIX,huobi.me
+DOMAIN-SUFFIX,huobi.pro
+DOMAIN-SUFFIX,huobi.sc
+DOMAIN-SUFFIX,huobiasia.vip
+DOMAIN-SUFFIX,huobigroup.com
+DOMAIN-SUFFIX,huobitoken.com
+DOMAIN-SUFFIX,hyperliquid.xyz
+DOMAIN-SUFFIX,infura.io
+DOMAIN-SUFFIX,invity.io
+DOMAIN-SUFFIX,kraken.com
+DOMAIN-SUFFIX,kraken.onl
+DOMAIN-SUFFIX,kucoin.com
+DOMAIN-SUFFIX,kucoin.plus
+DOMAIN-SUFFIX,localbitcoins.com
+DOMAIN-SUFFIX,localbitcoinschain.com
+DOMAIN-SUFFIX,maple.finance
+DOMAIN-SUFFIX,metalpha.finance
+DOMAIN-SUFFIX,mexc.com
+DOMAIN-SUFFIX,mexcsensors.com
+DOMAIN-SUFFIX,mytokenapi.com
+DOMAIN-SUFFIX,nexo.com
+DOMAIN-SUFFIX,nexo.io
+DOMAIN-SUFFIX,nftstatic.com
+DOMAIN-SUFFIX,okex.com
+DOMAIN-SUFFIX,oklink.com
+DOMAIN-SUFFIX,okx-dns.com
+DOMAIN-SUFFIX,okx-dns1.com
+DOMAIN-SUFFIX,okx-dns2.com
+DOMAIN-SUFFIX,okx.cab
+DOMAIN-SUFFIX,okx.com
+DOMAIN-SUFFIX,okx.com.cdn.cloudflare.net
+DOMAIN-SUFFIX,onekey-asset.com
+DOMAIN-SUFFIX,onekey.so
+DOMAIN-SUFFIX,onekeycn.com
+DOMAIN-SUFFIX,opensea.io
+DOMAIN-SUFFIX,osl.com
+DOMAIN-SUFFIX,paxful.com
+DOMAIN-SUFFIX,pod-15-sunco-ws.zendesk.com
+DOMAIN-SUFFIX,polymarket.com
+DOMAIN-SUFFIX,redotpay.com
+DOMAIN-SUFFIX,redotpay.zendesk.com
+DOMAIN-SUFFIX,ripple.com
+DOMAIN-SUFFIX,rp-static-apne1.s3.ap-northeast-1.amazonaws.com
+DOMAIN-SUFFIX,saasexch.cc
+DOMAIN-SUFFIX,satoshilabs.com
+DOMAIN-SUFFIX,stealthex.io
+DOMAIN-SUFFIX,straitsx.com
+DOMAIN-SUFFIX,theblock.co
+DOMAIN-SUFFIX,trezor.io
+DOMAIN-SUFFIX,truefi.io
+DOMAIN-SUFFIX,trustwallet.com
+DOMAIN-SUFFIX,unisat.io
+DOMAIN-SUFFIX,uniswap.org
+DOMAIN-SUFFIX,walletconnect.com
+DOMAIN-SUFFIX,walletconnect.org
+DOMAIN-SUFFIX,wintermute.com
+DOMAIN-SUFFIX,wisecoin.com
+DOMAIN-SUFFIX,wiseid.com
+DOMAIN-SUFFIX,wisekey.com
+DOMAIN-SUFFIX,wisekey.com.hk
+DOMAIN-SUFFIX,wynd.network
+DOMAIN-SUFFIX,wyndlabs.ai
+DOMAIN-SUFFIX,xhpjc6-cdn-settings.appsflyersdk.com
+DOMAIN-SUFFIX,zapper.fi
+DOMAIN-SUFFIX,zb.app
+DOMAIN-SUFFIX,zb.com
+DOMAIN-SUFFIX,zb.io
+DOMAIN-SUFFIX,zb.live
+
+# ############################################################################
+# 应用：coinpoker（106 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（32 条）---
+DOMAIN,5z-2b6b7616f94640c2840d1841e1ac24c3.ecs.us-east-1.on.aws
+DOMAIN,ads.smartstream.tv
+DOMAIN,apixeu.b2c.com
+DOMAIN,app.link
+DOMAIN,cm.adsafety.net
+DOMAIN,d.turn.com
+DOMAIN,d11vj49eiwzxhj.cloudfront.net
+DOMAIN,d12n4sdz9sv2g7.cloudfront.net
+DOMAIN,d1bk2jo4nt0s4w.cloudfront.net
+DOMAIN,d1f41kibrpebrc.cloudfront.net
+DOMAIN,d26s3bt6yeixto.cloudfront.net
+DOMAIN,d2bykaxvqgqb85.cloudfront.net
+DOMAIN,d2df0cv2coy003.cloudfront.net
+DOMAIN,d36r46gbgvqx8s.cloudfront.net
+DOMAIN,d36vgdcqgezjgr.cloudfront.net
+DOMAIN,d3nxjax74tiuet.cloudfront.net
+DOMAIN,d7nyfwsarnqp7.cloudfront.net
+DOMAIN,e1-0850197d5e074be58352ddc860645af6.ecs.us-east-1.on.aws
+DOMAIN,eu.b2c.com
+DOMAIN,gfdsa.hhewjzfa.com
+DOMAIN,k6-e4e4123be8e54363900a90353991ca93.ecs.us-west-1.on.aws
+DOMAIN,m-gsosikpxom-ovjrmipdpv-net-pragmaticplay.cpcasino.cloud
+DOMAIN,md-eecad2978f7a43f5b7838c919258e6de.ecs.us-east-2.on.aws
+DOMAIN,o4510980300996608.ingest.de.sentry.io
+DOMAIN,ov-1d104299d2a447049cdc73700c9309f7.ecs.us-west-2.on.aws
+DOMAIN,pages-app.com
+DOMAIN,pro-in-app-device-m-v2.csftr.com
+DOMAIN,r2.cpcloudbridge.com
+DOMAIN,s.yimg.com
+DOMAIN,t.adx.opera.com
+DOMAIN,tags.adsafety.net
+DOMAIN,tcp.signfuli.com
+
+# --- DOMAIN-SUFFIX：域名后缀（74 条）---
+DOMAIN-SUFFIX,360yield.com
+DOMAIN-SUFFIX,3lift.com
+DOMAIN-SUFFIX,adform.net
+DOMAIN-SUFFIX,adition.com
+DOMAIN-SUFFIX,admanmedia.com
+DOMAIN-SUFFIX,adradv.io
+DOMAIN-SUFFIX,adrsbl.io
+DOMAIN-SUFFIX,adscale.de
+DOMAIN-SUFFIX,adsrvr.org
+DOMAIN-SUFFIX,agkn.com
+DOMAIN-SUFFIX,amplitude.com
+DOMAIN-SUFFIX,analytics.yahoo.com
+DOMAIN-SUFFIX,assets.eascdn.net
+DOMAIN-SUFFIX,audrte.com
+DOMAIN-SUFFIX,bidr.io
+DOMAIN-SUFFIX,bidswitch.net
+DOMAIN-SUFFIX,branch.io
+DOMAIN-SUFFIX,casalemedia.com
+DOMAIN-SUFFIX,clevertap-prod.com
+DOMAIN-SUFFIX,cliprushgaming.com
+DOMAIN-SUFFIX,coincashier-m1.com
+DOMAIN-SUFFIX,coinpoker.biz
+DOMAIN-SUFFIX,coinpoker.com
+DOMAIN-SUFFIX,coinpoker1.com
+DOMAIN-SUFFIX,coinpokerbackend.com
+DOMAIN-SUFFIX,contentexchange.me
+DOMAIN-SUFFIX,crwdcntrl.net
+DOMAIN-SUFFIX,datafa.st
+DOMAIN-SUFFIX,datawrkz.com
+DOMAIN-SUFFIX,dynatrace.com
+DOMAIN-SUFFIX,eu-1-id5-sync.com
+DOMAIN-SUFFIX,everesttech.net
+DOMAIN-SUFFIX,exelator.com
+DOMAIN-SUFFIX,exoclick.com
+DOMAIN-SUFFIX,eyeota.net
+DOMAIN-SUFFIX,fwmrm.net
+DOMAIN-SUFFIX,gumgum.com
+DOMAIN-SUFFIX,id5-sync.com
+DOMAIN-SUFFIX,kargo.com
+DOMAIN-SUFFIX,lijit.com
+DOMAIN-SUFFIX,localhubweb.com
+DOMAIN-SUFFIX,ltguevmavv.com
+DOMAIN-SUFFIX,match2one.net
+DOMAIN-SUFFIX,mathtag.com
+DOMAIN-SUFFIX,mediarithmics.com
+DOMAIN-SUFFIX,omnitagjs.com
+DOMAIN-SUFFIX,onaudience.com
+DOMAIN-SUFFIX,onetag-sys.com
+DOMAIN-SUFFIX,openx.net
+DOMAIN-SUFFIX,outbrain.com
+DOMAIN-SUFFIX,ovjrmipdpv.net
+DOMAIN-SUFFIX,pgammedia.com
+DOMAIN-SUFFIX,pippio.com
+DOMAIN-SUFFIX,pokerbaazicdn.com
+DOMAIN-SUFFIX,pubmatic.com
+DOMAIN-SUFFIX,quantumsprout.net
+DOMAIN-SUFFIX,richaudience.com
+DOMAIN-SUFFIX,rlcdn.com
+DOMAIN-SUFFIX,rubiconproject.com
+DOMAIN-SUFFIX,seadform.net
+DOMAIN-SUFFIX,semasio.net
+DOMAIN-SUFFIX,sharethrough.com
+DOMAIN-SUFFIX,smaato.net
+DOMAIN-SUFFIX,snippet.anjcdn.org
+DOMAIN-SUFFIX,snippet.anjouangaming.org
+DOMAIN-SUFFIX,stackharbor.biz
+DOMAIN-SUFFIX,teads.tv
+DOMAIN-SUFFIX,thecloudinfra.com
+DOMAIN-SUFFIX,userreport.com
+DOMAIN-SUFFIX,viralrespawn.com
+DOMAIN-SUFFIX,w55c.net
+DOMAIN-SUFFIX,weborama.fr
+DOMAIN-SUFFIX,yieldlab.net
+DOMAIN-SUFFIX,zeotap.com
+
+# ############################################################################
+# 应用：Crypto（152 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（2 条）---
+DOMAIN,min-api.cryptocompare.com
+DOMAIN,token-api.metaswap.codefi.network
+
+# --- DOMAIN-SUFFIX：域名后缀（143 条）---
+DOMAIN-SUFFIX,1ml.com
+DOMAIN-SUFFIX,acinq.co
+DOMAIN-SUFFIX,aex.com
+DOMAIN-SUFFIX,aicoin.com
+DOMAIN-SUFFIX,aimoon.com
+DOMAIN-SUFFIX,apy999.com
+DOMAIN-SUFFIX,avax.network
+DOMAIN-SUFFIX,bibox.com
+DOMAIN-SUFFIX,binance.im
+DOMAIN-SUFFIX,bitcoin.it
+DOMAIN-SUFFIX,bitcoinity.org
+DOMAIN-SUFFIX,bitcoinmagazine.com
+DOMAIN-SUFFIX,bitcointalk.org
+DOMAIN-SUFFIX,bitcoinvisuals.com
+DOMAIN-SUFFIX,bitderiv.com
+DOMAIN-SUFFIX,bithumb.com
+DOMAIN-SUFFIX,bitnodes.earn.com
+DOMAIN-SUFFIX,block.one
+DOMAIN-SUFFIX,blockchair.com
+DOMAIN-SUFFIX,bloks.io
+DOMAIN-SUFFIX,bnappzh.com
+DOMAIN-SUFFIX,bnappzh.mobi
+DOMAIN-SUFFIX,boba.network
+DOMAIN-SUFFIX,bsc.getblock.io
+DOMAIN-SUFFIX,bscscan.com
+DOMAIN-SUFFIX,btc.com
+DOMAIN-SUFFIX,bytetree.com
+DOMAIN-SUFFIX,cbeci.org
+DOMAIN-SUFFIX,chainalysis.com
+DOMAIN-SUFFIX,chainbroker.io
+DOMAIN-SUFFIX,chippay.com
+DOMAIN-SUFFIX,coin.dance
+DOMAIN-SUFFIX,coincheck.com
+DOMAIN-SUFFIX,coincheckup.com
+DOMAIN-SUFFIX,coincodex.com
+DOMAIN-SUFFIX,coinmetrics.io
+DOMAIN-SUFFIX,coinowo.com
+DOMAIN-SUFFIX,cointrendz.com
+DOMAIN-SUFFIX,compound.finance
+DOMAIN-SUFFIX,crunchbase.com
+DOMAIN-SUFFIX,crypto51.app
+DOMAIN-SUFFIX,cryptoart.io
+DOMAIN-SUFFIX,cryptofees.info
+DOMAIN-SUFFIX,cryptoquant.com
+DOMAIN-SUFFIX,cryptorank.io
+DOMAIN-SUFFIX,cryptoslam.io
+DOMAIN-SUFFIX,dapp.review
+DOMAIN-SUFFIX,dcabtc.com
+DOMAIN-SUFFIX,defieye.io
+DOMAIN-SUFFIX,defillama.com
+DOMAIN-SUFFIX,defipulse.com
+DOMAIN-SUFFIX,defirate.com
+DOMAIN-SUFFIX,developers.eos.io
+DOMAIN-SUFFIX,dextools.io
+DOMAIN-SUFFIX,digiconomist.net
+DOMAIN-SUFFIX,discuss.ipfs.io
+DOMAIN-SUFFIX,docs.ipfs.io
+DOMAIN-SUFFIX,docs.lotu.sh
+DOMAIN-SUFFIX,dovemetrics.com
+DOMAIN-SUFFIX,dropsearn.com
+DOMAIN-SUFFIX,duneanalytics.com
+DOMAIN-SUFFIX,earni.fi
+DOMAIN-SUFFIX,eos.io
+DOMAIN-SUFFIX,eosflare.io
+DOMAIN-SUFFIX,eospark.com
+DOMAIN-SUFFIX,eostracker.io
+DOMAIN-SUFFIX,ethereum-magicians.org
+DOMAIN-SUFFIX,ethereum.cn
+DOMAIN-SUFFIX,ethereum.stackexchange.com
+DOMAIN-SUFFIX,ethermine.org
+DOMAIN-SUFFIX,ethernodes.org
+DOMAIN-SUFFIX,etherscan.com
+DOMAIN-SUFFIX,ethfans.org
+DOMAIN-SUFFIX,ethgasstation.info
+DOMAIN-SUFFIX,ewapool.net
+DOMAIN-SUFFIX,f2pool.com
+DOMAIN-SUFFIX,filecoin.io
+DOMAIN-SUFFIX,flashbots.net
+DOMAIN-SUFFIX,ftx.com
+DOMAIN-SUFFIX,gate.ac
+DOMAIN-SUFFIX,glassnode.com
+DOMAIN-SUFFIX,heco-scan.com
+DOMAIN-SUFFIX,hecochain.com
+DOMAIN-SUFFIX,hecoview.com
+DOMAIN-SUFFIX,huobi.br.com
+DOMAIN-SUFFIX,huobi.co.ma
+DOMAIN-SUFFIX,huobi.ug
+DOMAIN-SUFFIX,huobi.ws
+DOMAIN-SUFFIX,icodrops.com
+DOMAIN-SUFFIX,intotheblock.com
+DOMAIN-SUFFIX,ipfs.io
+DOMAIN-SUFFIX,jaxx.io
+DOMAIN-SUFFIX,korbit.co.kr
+DOMAIN-SUFFIX,lightning.community
+DOMAIN-SUFFIX,lightning.engineering
+DOMAIN-SUFFIX,liquid.com
+DOMAIN-SUFFIX,loanscan.io
+DOMAIN-SUFFIX,makerdao.com
+DOMAIN-SUFFIX,makersplace.com
+DOMAIN-SUFFIX,masternodes.online
+DOMAIN-SUFFIX,mdex.co
+DOMAIN-SUFFIX,mdex.com
+DOMAIN-SUFFIX,mdex.me
+DOMAIN-SUFFIX,mdex.one
+DOMAIN-SUFFIX,myetherwallet.com
+DOMAIN-SUFFIX,nansen.ai
+DOMAIN-SUFFIX,nftcalendar.io
+DOMAIN-SUFFIX,nftgo.io
+DOMAIN-SUFFIX,nftscan.com
+DOMAIN-SUFFIX,nonfungible.com
+DOMAIN-SUFFIX,nyctale.io
+DOMAIN-SUFFIX,optimism.io
+DOMAIN-SUFFIX,pancakeswap.com
+DOMAIN-SUFFIX,pancakeswap.finance
+DOMAIN-SUFFIX,parity.io
+DOMAIN-SUFFIX,phantom.app
+DOMAIN-SUFFIX,poloniex.com
+DOMAIN-SUFFIX,poly.network
+DOMAIN-SUFFIX,poolin.com
+DOMAIN-SUFFIX,raydium.io
+DOMAIN-SUFFIX,solana.com
+DOMAIN-SUFFIX,stateofthedapps.com
+DOMAIN-SUFFIX,sunswap.com
+DOMAIN-SUFFIX,sushi.com
+DOMAIN-SUFFIX,synthetix.io
+DOMAIN-SUFFIX,tether.to
+DOMAIN-SUFFIX,thegraph.com
+DOMAIN-SUFFIX,thetie.io
+DOMAIN-SUFFIX,token.im
+DOMAIN-SUFFIX,tokenpocket.pro
+DOMAIN-SUFFIX,tokenterminal.com
+DOMAIN-SUFFIX,tokenview.com
+DOMAIN-SUFFIX,tradeblock.com
+DOMAIN-SUFFIX,traderjoexyz.com
+DOMAIN-SUFFIX,tronlink.org
+DOMAIN-SUFFIX,trustwalletapp.com
+DOMAIN-SUFFIX,vfat.tools
+DOMAIN-SUFFIX,viewbase.com
+DOMAIN-SUFFIX,vitalik.ca
+DOMAIN-SUFFIX,watchtheburn.com
+DOMAIN-SUFFIX,wbtc.network
+DOMAIN-SUFFIX,zkscan.io
+DOMAIN-SUFFIX,zksync.io
+
+# --- DOMAIN-KEYWORD：域名关键词（4 条）---
+DOMAIN-KEYWORD,binance
+DOMAIN-KEYWORD,huobi
+DOMAIN-KEYWORD,metamask
+DOMAIN-KEYWORD,okx
+
+# --- PROCESS-NAME：进程名称（3 条）---
+PROCESS-NAME,Binance.exe
+PROCESS-NAME,Huobi.exe
+PROCESS-NAME,OKX.exe
+
+# ############################################################################
+# 应用：htx（43 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（9 条）---
+DOMAIN,futures.huobi.ug
+DOMAIN,hdm.htx.com.gt
+DOMAIN,m.htx.com
+DOMAIN,m.htx.com.gt
+DOMAIN,www.htx.com
+DOMAIN,www.htx.com.gt
+DOMAIN,www.htx.com.lv
+DOMAIN,www.huobi.com
+DOMAIN,www.mokexapp.com
+
+# --- DOMAIN-SUFFIX：域名后缀（34 条）---
+DOMAIN-SUFFIX,access.pushsdk.com
+DOMAIN-SUFFIX,apd-pcdnwxnat.teg.tencent-cloud.net
+DOMAIN-SUFFIX,app-static-1306115679.file.myqcloud.com
+DOMAIN-SUFFIX,contract-akm.htx.com
+DOMAIN-SUFFIX,contract-cf.htx.com
+DOMAIN-SUFFIX,contract-trade-new-notification.contract-akm.htx.com
+DOMAIN-SUFFIX,contract-trade-new-notification.contract-cf.htx.com
+DOMAIN-SUFFIX,download.hbfile.net
+DOMAIN-SUFFIX,global-akm.htx.com
+DOMAIN-SUFFIX,global-cf.htx.com
+DOMAIN-SUFFIX,guid.tpns.sgp.tencent.com
+DOMAIN-SUFFIX,hbg-fed-static-prd.hbfile.net
+DOMAIN-SUFFIX,hbg-prod-fed-public.hbfile.net
+DOMAIN-SUFFIX,htxcfg-1306115679.cos.ap-beijing.myqcloud.com
+DOMAIN-SUFFIX,huobicfg.s3.amazonaws.com
+DOMAIN-SUFFIX,huobicfg.s3.ap-northeast-1.amazonaws.com
+DOMAIN-SUFFIX,institution-akm.htx.com
+DOMAIN-SUFFIX,l10n-pro.88maru.com
+DOMAIN-SUFFIX,l10n-pro.apru88.com
+DOMAIN-SUFFIX,l10n-pro.octu88.com
+DOMAIN-SUFFIX,log.tpns.sgp.tencent.com
+DOMAIN-SUFFIX,open.woodpeckerlog.com
+DOMAIN-SUFFIX,otc-akm.htx.com
+DOMAIN-SUFFIX,otc-cf.htx.com
+DOMAIN-SUFFIX,otc-file.hbfile.net
+DOMAIN-SUFFIX,quotation-linear-swap-new-notification.contract-akm.htx.com
+DOMAIN-SUFFIX,quotation-linear-swap-new-notification.contract-cf.htx.com
+DOMAIN-SUFFIX,report.daumoon.com
+DOMAIN-SUFFIX,shortsgp.im.qcloud.com
+DOMAIN-SUFFIX,stat.tpns.sgp.tencent.com
+DOMAIN-SUFFIX,swap-trade-new-notification.contract-akm.htx.com
+DOMAIN-SUFFIX,swap-trade-new-notification.contract-cf.htx.com
+DOMAIN-SUFFIX,v5-user-data-push.contract-akm.htx.com
+DOMAIN-SUFFIX,v5-user-data-push.contract-cf.htx.com
+
+# ############################################################################
+# 应用：htx ip（6 条）
+# ############################################################################
+
+# --- IP-CIDR：IPv4 网段（6 条）---
+IP-CIDR,101.33.46.218/32
+IP-CIDR,43.163.16.28/32
+IP-CIDR,43.163.17.102/32
+IP-CIDR,43.163.17.223/32
+IP-CIDR,43.163.17.229/32
+IP-CIDR,43.163.17.64/32
+
+# ############################################################################
+# 应用：natural8（14 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（14 条）---
+DOMAIN-SUFFIX,cashier-natural8.com
+DOMAIN-SUFFIX,cashier-natural8in.com
+DOMAIN-SUFFIX,gg-global-cdn.com
+DOMAIN-SUFFIX,ggn.live
+DOMAIN-SUFFIX,ggpass.com
+DOMAIN-SUFFIX,ggpoker.ca
+DOMAIN-SUFFIX,ggpoker.com
+DOMAIN-SUFFIX,ggvegas.com
+DOMAIN-SUFFIX,good-game-service.com
+DOMAIN-SUFFIX,goodchoice.kr
+DOMAIN-SUFFIX,iconify.design
+DOMAIN-SUFFIX,natural8.com
+DOMAIN-SUFFIX,primepoker.io
+DOMAIN-SUFFIX,up24.biz
+
+# ############################################################################
+# 应用：okx（7 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（6 条）---
+DOMAIN,contendvc.cnouyi.pizza
+DOMAIN,pkg.dejiz.com
+DOMAIN,web3.okx.com.cdn.cloudflare.net
+DOMAIN,wsdexpri.okx.com.cdn.cloudflare.net
+DOMAIN,wspri.okx.com.cdn.cloudflare.net
+DOMAIN,www.okx.com.cdn.cloudflare.net
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,okcoin.com
+
+# ############################################################################
+# 应用：okx ip（5 条）
+# ############################################################################
+
+# --- IP-CIDR：IPv4 网段（5 条）---
+IP-CIDR,47.242.92.56/32
+IP-CIDR,47.97.124.22/32
+IP-CIDR,47.98.188.132/32
+IP-CIDR,47.99.54.158/32
+IP-CIDR,8.210.73.205/32
+
+# ############################################################################
+# 应用：tradingview（3 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（2 条）---
+DOMAIN,o981304.ingest.sentry.io
+DOMAIN,rules.quantcount.com
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,tradingview.com
+
+# ############################################################################
+# 应用：PayPal（3 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（3 条）---
+DOMAIN-SUFFIX,paypal.com
+DOMAIN-SUFFIX,paypal.me
+DOMAIN-SUFFIX,paypalobjects.com
+
+# ############################################################################
+# 应用：Venmo（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,venmo.com
+
+# ############################################################################
+# 应用：Cash App（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,cash.app
+DOMAIN-SUFFIX,cashapp.com
+
+# ############################################################################
+# 应用：Zelle（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,zellepay.com
+
+# ############################################################################
+# 应用：Wise / TransferWise（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,transferwise.com
+DOMAIN-SUFFIX,wise.com
+
+# ############################################################################
+# 应用：Revolut（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,revolut.com
+
+# ############################################################################
+# 应用：Skrill（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,skrill.com
+
+# ############################################################################
+# 应用：Neteller（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,neteller.com
+
+# ############################################################################
+# 应用：Payoneer（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,payoneer.com
+
+# ############################################################################
+# 应用：Western Union（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,westernunion.com
+
+# ############################################################################
+# 应用：MoneyGram（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,moneygram.com
+
+# ############################################################################
+# 应用：Coinbase（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,coinbaseassets.com
+
+# ############################################################################
+# 应用：MetaMask（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,metamask.io
+
+# ==============================================================================
+# 风险场景：远程控制与技术支持工具（10 个应用/规则集，29 条）
+# ==============================================================================
+
+# ############################################################################
+# 应用：TeamViewer（9 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,teamviewer.com
+
+# --- IP-CIDR：IPv4 网段（4 条）---
+IP-CIDR,139.220.243.27/32,no-resolve
+IP-CIDR,172.16.102.56/32,no-resolve
+IP-CIDR,185.188.32.1/28,no-resolve
+IP-CIDR,221.226.128.146/32,no-resolve
+
+# --- IP-CIDR6：IPv6 网段（4 条）---
+IP-CIDR6,2a0b:b580::/48,no-resolve
+IP-CIDR6,2a0b:b581::/48,no-resolve
+IP-CIDR6,2a0b:b582::/48,no-resolve
+IP-CIDR6,2a0b:b583::/48,no-resolve
+
+# ############################################################################
+# 应用：RemoteDesktop（9 条）
+# ############################################################################
+
+# --- PROCESS-NAME：进程名称（9 条）---
+PROCESS-NAME,CrashReport.exe
+PROCESS-NAME,DriverInstaller.exe
+PROCESS-NAME,SunloginClient.exe
+PROCESS-NAME,ToDesk.exe
+PROCESS-NAME,ToDesk_Service.exe
+PROCESS-NAME,ToDesk_Session.exe
+PROCESS-NAME,ToDesk_Setup.exe
+PROCESS-NAME,devcon.exe
+PROCESS-NAME,mstsc.exe
+
+# ############################################################################
+# 应用：AnyDesk（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,anydesk.com
+
+# ############################################################################
+# 应用：RustDesk（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,rustdesk.com
+
+# ############################################################################
+# 应用：ConnectWise ScreenConnect（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,connectwise.com
+DOMAIN-SUFFIX,screenconnect.com
+
+# ############################################################################
+# 应用：Splashtop（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,splashtop.com
+
+# ############################################################################
+# 应用：LogMeIn / GoTo（3 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（3 条）---
+DOMAIN-SUFFIX,goto.com
+DOMAIN-SUFFIX,gotomypc.com
+DOMAIN-SUFFIX,logmein.com
+
+# ############################################################################
+# 应用：Zoho Assist（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,zohoassist.com
+
+# ############################################################################
+# 应用：Supremo（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,supremocontrol.com
+
+# ############################################################################
+# 应用：UltraViewer（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,ultraviewer.net
+
+# ==============================================================================
+# 风险场景：社交媒体与即时通讯（28 个应用/规则集，764 条）
+# ==============================================================================
+
+# ############################################################################
+# 应用：discord（49 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（49 条）---
+DOMAIN-SUFFIX,airhorn.solutions
+DOMAIN-SUFFIX,airhornbot.com
+DOMAIN-SUFFIX,bigbeans.solutions
+DOMAIN-SUFFIX,dis.gd
+DOMAIN-SUFFIX,disboard.org
+DOMAIN-SUFFIX,discord-activities.com
+DOMAIN-SUFFIX,discord-attachments-uploads-prd.storage.googleapis.com
+DOMAIN-SUFFIX,discord.center
+DOMAIN-SUFFIX,discord.co
+DOMAIN-SUFFIX,discord.com
+DOMAIN-SUFFIX,discord.design
+DOMAIN-SUFFIX,discord.dev
+DOMAIN-SUFFIX,discord.gg
+DOMAIN-SUFFIX,discord.gift
+DOMAIN-SUFFIX,discord.gifts
+DOMAIN-SUFFIX,discord.me
+DOMAIN-SUFFIX,discord.media
+DOMAIN-SUFFIX,discord.new
+DOMAIN-SUFFIX,discord.st
+DOMAIN-SUFFIX,discord.store
+DOMAIN-SUFFIX,discord.tools
+DOMAIN-SUFFIX,discordactivities.com
+DOMAIN-SUFFIX,discordapp.com
+DOMAIN-SUFFIX,discordapp.io
+DOMAIN-SUFFIX,discordapp.net
+DOMAIN-SUFFIX,discordapp.page.link
+DOMAIN-SUFFIX,discordbee.com
+DOMAIN-SUFFIX,discordbotlist.com
+DOMAIN-SUFFIX,discordcdn.com
+DOMAIN-SUFFIX,discordexpert.com
+DOMAIN-SUFFIX,discordhome.com
+DOMAIN-SUFFIX,discordhub.com
+DOMAIN-SUFFIX,discordinvites.net
+DOMAIN-SUFFIX,discordlist.me
+DOMAIN-SUFFIX,discordlist.space
+DOMAIN-SUFFIX,discordmerch.com
+DOMAIN-SUFFIX,discordpartygames.com
+DOMAIN-SUFFIX,discords.com
+DOMAIN-SUFFIX,discordsays.com
+DOMAIN-SUFFIX,discordservers.com
+DOMAIN-SUFFIX,discordstatus.com
+DOMAIN-SUFFIX,discordtop.com
+DOMAIN-SUFFIX,disforge.com
+DOMAIN-SUFFIX,dyno.gg
+DOMAIN-SUFFIX,findadiscord.com
+DOMAIN-SUFFIX,hammerandchisel.ssl.zendesk.com
+DOMAIN-SUFFIX,mee6.xyz
+DOMAIN-SUFFIX,top.gg
+DOMAIN-SUFFIX,watchanimeattheoffice.com
+
+# ############################################################################
+# 应用：discord ip（1 条）
+# ############################################################################
+
+# --- IP-CIDR：IPv4 网段（1 条）---
+IP-CIDR,104.29.128.0/19
+
+# ############################################################################
+# 应用：Facebook（21 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（5 条）---
+DOMAIN-SUFFIX,facebook.com
+DOMAIN-SUFFIX,fb.com
+DOMAIN-SUFFIX,fb.me
+DOMAIN-SUFFIX,fbcdn.com
+DOMAIN-SUFFIX,fbcdn.net
+
+# --- DOMAIN-KEYWORD：域名关键词（2 条）---
+DOMAIN-KEYWORD,facebook
+DOMAIN-KEYWORD,fbcdn
+
+# --- IP-CIDR：IPv4 网段（14 条）---
+IP-CIDR,103.4.96.0/22,no-resolve
+IP-CIDR,129.134.0.0/17,no-resolve
+IP-CIDR,157.240.0.0/17,no-resolve
+IP-CIDR,173.252.64.0/18,no-resolve
+IP-CIDR,179.60.192.0/22,no-resolve
+IP-CIDR,185.60.216.0/22,no-resolve
+IP-CIDR,204.15.20.0/22,no-resolve
+IP-CIDR,31.13.24.0/21,no-resolve
+IP-CIDR,31.13.64.0/18,no-resolve
+IP-CIDR,45.64.40.0/22,no-resolve
+IP-CIDR,66.220.144.0/20,no-resolve
+IP-CIDR,69.171.224.0/19,no-resolve
+IP-CIDR,69.63.176.0/20,no-resolve
+IP-CIDR,74.119.76.0/22,no-resolve
+
+# ############################################################################
+# 应用：Instagram（4 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（3 条）---
+DOMAIN-SUFFIX,cdninstagram.com
+DOMAIN-SUFFIX,instagr.am
+DOMAIN-SUFFIX,instagram.com
+
+# --- DOMAIN-KEYWORD：域名关键词（1 条）---
+DOMAIN-KEYWORD,instagram
+
+# ############################################################################
+# 应用：KakaoTalk（9 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（3 条）---
+DOMAIN-SUFFIX,kakao.co.kr
+DOMAIN-SUFFIX,kakao.com
+DOMAIN-SUFFIX,kakaocdn.net
+
+# --- IP-CIDR：IPv4 网段（6 条）---
+IP-CIDR,1.201.0.0/24,no-resolve
+IP-CIDR,103.246.56.0/22,no-resolve
+IP-CIDR,103.27.148.0/22,no-resolve
+IP-CIDR,110.76.140.0/22,no-resolve
+IP-CIDR,113.61.104.0/22,no-resolve
+IP-CIDR,27.0.236.0/22,no-resolve
+
+# ############################################################################
+# 应用：Line（15 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（7 条）---
+DOMAIN-SUFFIX,lin.ee
+DOMAIN-SUFFIX,line-apps.com
+DOMAIN-SUFFIX,line-cdn.net
+DOMAIN-SUFFIX,line-scdn.net
+DOMAIN-SUFFIX,line.me
+DOMAIN-SUFFIX,line.naver.jp
+DOMAIN-SUFFIX,nhncorp.jp
+
+# --- IP-CIDR：IPv4 网段（8 条）---
+IP-CIDR,103.2.28.0/24,no-resolve
+IP-CIDR,103.2.30.0/23,no-resolve
+IP-CIDR,119.235.224.0/24,no-resolve
+IP-CIDR,119.235.232.0/24,no-resolve
+IP-CIDR,119.235.235.0/24,no-resolve
+IP-CIDR,119.235.236.0/23,no-resolve
+IP-CIDR,147.92.128.0/17,no-resolve
+IP-CIDR,203.104.128.0/19,no-resolve
+
+# ############################################################################
+# 应用：LineTV（4 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（1 条）---
+DOMAIN,d3c7rimkq79yfu.cloudfront.net
+
+# --- DOMAIN-SUFFIX：域名后缀（3 条）---
+DOMAIN-SUFFIX,d3c7rimkq79yfu.cloudfront.net
+DOMAIN-SUFFIX,linetv.tw
+DOMAIN-SUFFIX,profile.line-scdn.net
+
+# ############################################################################
+# 应用：Meta（536 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（512 条）---
+DOMAIN-SUFFIX,aboutfacebook.com
+DOMAIN-SUFFIX,accessfacebookfromschool.com
+DOMAIN-SUFFIX,acebooik.com
+DOMAIN-SUFFIX,acebook.com
+DOMAIN-SUFFIX,achat-followers-instagram.com
+DOMAIN-SUFFIX,acheter-followers-instagram.com
+DOMAIN-SUFFIX,acheterdesfollowersinstagram.com
+DOMAIN-SUFFIX,acheterfollowersinstagram.com
+DOMAIN-SUFFIX,advancediddetection.com
+DOMAIN-SUFFIX,askfacebook.net
+DOMAIN-SUFFIX,askfacebook.org
+DOMAIN-SUFFIX,atdmt2.com
+DOMAIN-SUFFIX,atlasdmt.com
+DOMAIN-SUFFIX,atlasonepoint.com
+DOMAIN-SUFFIX,atscaleconference.com
+DOMAIN-SUFFIX,binoculus.com
+DOMAIN-SUFFIX,bookstagram.com
+DOMAIN-SUFFIX,botorch.org
+DOMAIN-SUFFIX,buck.build
+DOMAIN-SUFFIX,buckbuild.com
+DOMAIN-SUFFIX,buyingfacebooklikes.com
+DOMAIN-SUFFIX,buyoculus.com
+DOMAIN-SUFFIX,careersatfb.com
+DOMAIN-SUFFIX,carstagram.com
+DOMAIN-SUFFIX,celebgramme.com
+DOMAIN-SUFFIX,chickstagram.com
+DOMAIN-SUFFIX,china-facebook.com
+DOMAIN-SUFFIX,click-url.com
+DOMAIN-SUFFIX,como-hackearfacebook.com
+DOMAIN-SUFFIX,componentkit.org
+DOMAIN-SUFFIX,crowdtangle.com
+DOMAIN-SUFFIX,dacebook.com
+DOMAIN-SUFFIX,dlfacebook.com
+DOMAIN-SUFFIX,dotfacebook.com
+DOMAIN-SUFFIX,dotfacebook.net
+DOMAIN-SUFFIX,draftjs.org
+DOMAIN-SUFFIX,expresswifi.com
+DOMAIN-SUFFIX,faacebok.com
+DOMAIN-SUFFIX,faacebook.com
+DOMAIN-SUFFIX,faasbook.com
+DOMAIN-SUFFIX,facbebook.com
+DOMAIN-SUFFIX,facbeok.com
+DOMAIN-SUFFIX,facboo.com
+DOMAIN-SUFFIX,facbook.com
+DOMAIN-SUFFIX,facbool.com
+DOMAIN-SUFFIX,facboox.com
+DOMAIN-SUFFIX,faccebook.com
+DOMAIN-SUFFIX,faccebookk.com
+DOMAIN-SUFFIX,facdbook.com
+DOMAIN-SUFFIX,facdebook.com
+DOMAIN-SUFFIX,face-book.com
+DOMAIN-SUFFIX,faceabook.com
+DOMAIN-SUFFIX,facebboc.com
+DOMAIN-SUFFIX,facebbook.com
+DOMAIN-SUFFIX,facebboook.com
+DOMAIN-SUFFIX,facebcook.com
+DOMAIN-SUFFIX,facebdok.com
+DOMAIN-SUFFIX,facebgook.com
+DOMAIN-SUFFIX,facebhook.com
+DOMAIN-SUFFIX,facebkkk.com
+DOMAIN-SUFFIX,facebo-ok.com
+DOMAIN-SUFFIX,faceboak.com
+DOMAIN-SUFFIX,facebock.com
+DOMAIN-SUFFIX,facebocke.com
+DOMAIN-SUFFIX,facebof.com
+DOMAIN-SUFFIX,faceboik.com
+DOMAIN-SUFFIX,facebok.com
+DOMAIN-SUFFIX,facebokbook.com
+DOMAIN-SUFFIX,facebokc.com
+DOMAIN-SUFFIX,facebokk.com
+DOMAIN-SUFFIX,facebokok.com
+DOMAIN-SUFFIX,faceboks.com
+DOMAIN-SUFFIX,facebol.com
+DOMAIN-SUFFIX,facebolk.com
+DOMAIN-SUFFIX,facebomok.com
+DOMAIN-SUFFIX,faceboo.com
+DOMAIN-SUFFIX,facebooa.com
+DOMAIN-SUFFIX,faceboob.com
+DOMAIN-SUFFIX,faceboobok.com
+DOMAIN-SUFFIX,facebooc.com
+DOMAIN-SUFFIX,faceboock.com
+DOMAIN-SUFFIX,facebood.com
+DOMAIN-SUFFIX,facebooe.com
+DOMAIN-SUFFIX,faceboof.com
+DOMAIN-SUFFIX,facebooi.com
+DOMAIN-SUFFIX,facebooik.com
+DOMAIN-SUFFIX,facebooik.org
+DOMAIN-SUFFIX,facebooj.com
+DOMAIN-SUFFIX,facebook-corp.com
+DOMAIN-SUFFIX,facebook-covid-19.com
+DOMAIN-SUFFIX,facebook-ebook.com
+DOMAIN-SUFFIX,facebook-forum.com
+DOMAIN-SUFFIX,facebook-hardware.com
+DOMAIN-SUFFIX,facebook-inc.com
+DOMAIN-SUFFIX,facebook-login.com
+DOMAIN-SUFFIX,facebook-newsroom.com
+DOMAIN-SUFFIX,facebook-newsroom.org
+DOMAIN-SUFFIX,facebook-pmdcenter.com
+DOMAIN-SUFFIX,facebook-pmdcenter.net
+DOMAIN-SUFFIX,facebook-pmdcenter.org
+DOMAIN-SUFFIX,facebook-privacy.com
+DOMAIN-SUFFIX,facebook-program.com
+DOMAIN-SUFFIX,facebook-studio.com
+DOMAIN-SUFFIX,facebook-support.org
+DOMAIN-SUFFIX,facebook-texas-holdem.com
+DOMAIN-SUFFIX,facebook-texas-holdem.net
+DOMAIN-SUFFIX,facebook.br
+DOMAIN-SUFFIX,facebook.ca
+DOMAIN-SUFFIX,facebook.cc
+DOMAIN-SUFFIX,facebook.net
+DOMAIN-SUFFIX,facebook.org
+DOMAIN-SUFFIX,facebook.shop
+DOMAIN-SUFFIX,facebook.tv
+DOMAIN-SUFFIX,facebook.us
+DOMAIN-SUFFIX,facebook.wang
+DOMAIN-SUFFIX,facebook123.org
+DOMAIN-SUFFIX,facebook30.com
+DOMAIN-SUFFIX,facebook30.net
+DOMAIN-SUFFIX,facebook30.org
+DOMAIN-SUFFIX,facebook4business.com
+DOMAIN-SUFFIX,facebookads.com
+DOMAIN-SUFFIX,facebookadvertisingsecrets.com
+DOMAIN-SUFFIX,facebookappcenter.info
+DOMAIN-SUFFIX,facebookappcenter.net
+DOMAIN-SUFFIX,facebookappcenter.org
+DOMAIN-SUFFIX,facebookatschool.com
+DOMAIN-SUFFIX,facebookawards.com
+DOMAIN-SUFFIX,facebookblueprint.net
+DOMAIN-SUFFIX,facebookbrand.com
+DOMAIN-SUFFIX,facebookbrand.net
+DOMAIN-SUFFIX,facebookcanadianelectionintegrityinitiative.com
+DOMAIN-SUFFIX,facebookcareer.com
+DOMAIN-SUFFIX,facebookcheats.com
+DOMAIN-SUFFIX,facebookck.com
+DOMAIN-SUFFIX,facebookclub.com
+DOMAIN-SUFFIX,facebookcom.com
+DOMAIN-SUFFIX,facebookconnect.com
+DOMAIN-SUFFIX,facebookconsultant.org
+DOMAIN-SUFFIX,facebookcoronavirus.com
+DOMAIN-SUFFIX,facebookcovers.org
+DOMAIN-SUFFIX,facebookcredits.info
+DOMAIN-SUFFIX,facebookdating.net
+DOMAIN-SUFFIX,facebookdevelopergarage.com
+DOMAIN-SUFFIX,facebookdusexe.org
+DOMAIN-SUFFIX,facebookemail.com
+DOMAIN-SUFFIX,facebookenespanol.com
+DOMAIN-SUFFIX,facebookexchange.com
+DOMAIN-SUFFIX,facebookexchange.net
+DOMAIN-SUFFIX,facebookfacebook.com
+DOMAIN-SUFFIX,facebookflow.com
+DOMAIN-SUFFIX,facebookgames.com
+DOMAIN-SUFFIX,facebookgraphsearch.com
+DOMAIN-SUFFIX,facebookgraphsearch.info
+DOMAIN-SUFFIX,facebookgroups.com
+DOMAIN-SUFFIX,facebookhome.cc
+DOMAIN-SUFFIX,facebookhome.com
+DOMAIN-SUFFIX,facebookhome.info
+DOMAIN-SUFFIX,facebookhub.com
+DOMAIN-SUFFIX,facebooki.com
+DOMAIN-SUFFIX,facebookinc.com
+DOMAIN-SUFFIX,facebookland.com
+DOMAIN-SUFFIX,facebooklikeexchange.com
+DOMAIN-SUFFIX,facebooklive.com
+DOMAIN-SUFFIX,facebooklivestaging.net
+DOMAIN-SUFFIX,facebooklivestaging.org
+DOMAIN-SUFFIX,facebooklogin.com
+DOMAIN-SUFFIX,facebooklogin.info
+DOMAIN-SUFFIX,facebookloginhelp.net
+DOMAIN-SUFFIX,facebooklogs.com
+DOMAIN-SUFFIX,facebookmail.tv
+DOMAIN-SUFFIX,facebookmanager.info
+DOMAIN-SUFFIX,facebookmarketing.info
+DOMAIN-SUFFIX,facebookmarketingpartner.com
+DOMAIN-SUFFIX,facebookmarketingpartners.com
+DOMAIN-SUFFIX,facebookmobile.com
+DOMAIN-SUFFIX,facebookmsn.com
+DOMAIN-SUFFIX,facebooknews.com
+DOMAIN-SUFFIX,facebooknfl.com
+DOMAIN-SUFFIX,facebooknude.com
+DOMAIN-SUFFIX,facebookofsex.com
+DOMAIN-SUFFIX,facebookook.com
+DOMAIN-SUFFIX,facebookpaper.com
+DOMAIN-SUFFIX,facebookpay.com
+DOMAIN-SUFFIX,facebookphonenumber.net
+DOMAIN-SUFFIX,facebookphoto.com
+DOMAIN-SUFFIX,facebookphotos.com
+DOMAIN-SUFFIX,facebookpmdcenter.com
+DOMAIN-SUFFIX,facebookpoke.net
+DOMAIN-SUFFIX,facebookpoke.org
+DOMAIN-SUFFIX,facebookpoker.info
+DOMAIN-SUFFIX,facebookpokerchips.info
+DOMAIN-SUFFIX,facebookporn.net
+DOMAIN-SUFFIX,facebookporn.org
+DOMAIN-SUFFIX,facebookporno.net
+DOMAIN-SUFFIX,facebookportal.com
+DOMAIN-SUFFIX,facebooks.com
+DOMAIN-SUFFIX,facebooksafety.com
+DOMAIN-SUFFIX,facebooksecurity.net
+DOMAIN-SUFFIX,facebookshop.com
+DOMAIN-SUFFIX,facebooksignup.net
+DOMAIN-SUFFIX,facebooksite.net
+DOMAIN-SUFFIX,facebookstories.com
+DOMAIN-SUFFIX,facebookstudios.net
+DOMAIN-SUFFIX,facebookstudios.org
+DOMAIN-SUFFIX,facebooksupplier.com
+DOMAIN-SUFFIX,facebooksuppliers.com
+DOMAIN-SUFFIX,facebookswagemea.com
+DOMAIN-SUFFIX,facebookswagstore.com
+DOMAIN-SUFFIX,facebooksz.com
+DOMAIN-SUFFIX,facebookthreads.net
+DOMAIN-SUFFIX,facebooktv.net
+DOMAIN-SUFFIX,facebooktv.org
+DOMAIN-SUFFIX,facebookvacation.com
+DOMAIN-SUFFIX,facebookw.com
+DOMAIN-SUFFIX,facebookwork.com
+DOMAIN-SUFFIX,facebookworld.com
+DOMAIN-SUFFIX,facebool.com
+DOMAIN-SUFFIX,facebool.info
+DOMAIN-SUFFIX,facebooll.com
+DOMAIN-SUFFIX,faceboom.com
+DOMAIN-SUFFIX,faceboon.com
+DOMAIN-SUFFIX,faceboonk.com
+DOMAIN-SUFFIX,faceboooik.com
+DOMAIN-SUFFIX,faceboook.com
+DOMAIN-SUFFIX,faceboop.com
+DOMAIN-SUFFIX,faceboot.com
+DOMAIN-SUFFIX,faceboox.com
+DOMAIN-SUFFIX,facebopk.com
+DOMAIN-SUFFIX,facebpook.com
+DOMAIN-SUFFIX,facebuk.com
+DOMAIN-SUFFIX,facebuok.com
+DOMAIN-SUFFIX,facebvook.com
+DOMAIN-SUFFIX,facebyook.com
+DOMAIN-SUFFIX,facebzook.com
+DOMAIN-SUFFIX,facecbgook.com
+DOMAIN-SUFFIX,facecbook.com
+DOMAIN-SUFFIX,facecbook.org
+DOMAIN-SUFFIX,facecook.com
+DOMAIN-SUFFIX,facecook.org
+DOMAIN-SUFFIX,facedbook.com
+DOMAIN-SUFFIX,faceebok.com
+DOMAIN-SUFFIX,faceebook.com
+DOMAIN-SUFFIX,faceebot.com
+DOMAIN-SUFFIX,facegbok.com
+DOMAIN-SUFFIX,facegbook.com
+DOMAIN-SUFFIX,faceobk.com
+DOMAIN-SUFFIX,faceobok.com
+DOMAIN-SUFFIX,faceobook.com
+DOMAIN-SUFFIX,faceook.com
+DOMAIN-SUFFIX,facerbooik.com
+DOMAIN-SUFFIX,facerbook.com
+DOMAIN-SUFFIX,facesbooc.com
+DOMAIN-SUFFIX,facesounds.com
+DOMAIN-SUFFIX,facetook.com
+DOMAIN-SUFFIX,facevbook.com
+DOMAIN-SUFFIX,facewbook.co
+DOMAIN-SUFFIX,facewook.com
+DOMAIN-SUFFIX,facfacebook.com
+DOMAIN-SUFFIX,facfebook.com
+DOMAIN-SUFFIX,faciometrics.com
+DOMAIN-SUFFIX,fackebook.com
+DOMAIN-SUFFIX,facnbook.com
+DOMAIN-SUFFIX,facrbook.com
+DOMAIN-SUFFIX,facvebook.com
+DOMAIN-SUFFIX,facwebook.com
+DOMAIN-SUFFIX,facxebook.com
+DOMAIN-SUFFIX,fadebook.com
+DOMAIN-SUFFIX,faebok.com
+DOMAIN-SUFFIX,faebook.com
+DOMAIN-SUFFIX,faebookc.com
+DOMAIN-SUFFIX,faeboook.com
+DOMAIN-SUFFIX,faecebok.com
+DOMAIN-SUFFIX,faesebook.com
+DOMAIN-SUFFIX,fafacebook.com
+DOMAIN-SUFFIX,faicbooc.com
+DOMAIN-SUFFIX,fasebokk.com
+DOMAIN-SUFFIX,fasebook.com
+DOMAIN-SUFFIX,faseboox.com
+DOMAIN-SUFFIX,fasttext.cc
+DOMAIN-SUFFIX,favebook.com
+DOMAIN-SUFFIX,faycbok.com
+DOMAIN-SUFFIX,fb.careers
+DOMAIN-SUFFIX,fbacebook.com
+DOMAIN-SUFFIX,fbbmarket.com
+DOMAIN-SUFFIX,fbboostyourbusiness.com
+DOMAIN-SUFFIX,fbcdn-a.akamaihd.net
+DOMAIN-SUFFIX,fbf8.com
+DOMAIN-SUFFIX,fbfeedback.com
+DOMAIN-SUFFIX,fbhome.com
+DOMAIN-SUFFIX,fbidb.io
+DOMAIN-SUFFIX,fbinc.com
+DOMAIN-SUFFIX,fbinfer.com
+DOMAIN-SUFFIX,fbinnovation.com
+DOMAIN-SUFFIX,fblitho.com
+DOMAIN-SUFFIX,fbmarketing.com
+DOMAIN-SUFFIX,fbmessenger.com
+DOMAIN-SUFFIX,fbredex.com
+DOMAIN-SUFFIX,fbreg.com
+DOMAIN-SUFFIX,fbrell.com
+DOMAIN-SUFFIX,fbrpms.com
+DOMAIN-SUFFIX,fbsbx.net
+DOMAIN-SUFFIX,fbsupport-covid.net
+DOMAIN-SUFFIX,fbthirdpartypixel.com
+DOMAIN-SUFFIX,fbthirdpartypixel.net
+DOMAIN-SUFFIX,fbthirdpartypixel.org
+DOMAIN-SUFFIX,fburl.com
+DOMAIN-SUFFIX,fcacebook.com
+DOMAIN-SUFFIX,fcaebook.com
+DOMAIN-SUFFIX,fcebook.com
+DOMAIN-SUFFIX,fcebookk.com
+DOMAIN-SUFFIX,fcfacebook.com
+DOMAIN-SUFFIX,fdacebook.info
+DOMAIN-SUFFIX,feacboo.com
+DOMAIN-SUFFIX,feacbook.com
+DOMAIN-SUFFIX,feacbooke.com
+DOMAIN-SUFFIX,feacebook.com
+DOMAIN-SUFFIX,fecbbok.com
+DOMAIN-SUFFIX,fecbooc.com
+DOMAIN-SUFFIX,fecbook.com
+DOMAIN-SUFFIX,feceboock.com
+DOMAIN-SUFFIX,fecebook.net
+DOMAIN-SUFFIX,feceboox.com
+DOMAIN-SUFFIX,fececbook.com
+DOMAIN-SUFFIX,feook.com
+DOMAIN-SUFFIX,ferabook.com
+DOMAIN-SUFFIX,fescebook.com
+DOMAIN-SUFFIX,fesebook.com
+DOMAIN-SUFFIX,ffacebook.com
+DOMAIN-SUFFIX,fgacebook.com
+DOMAIN-SUFFIX,ficeboock.com
+DOMAIN-SUFFIX,flow.dev
+DOMAIN-SUFFIX,flow.org
+DOMAIN-SUFFIX,flowtype.org
+DOMAIN-SUFFIX,fmcebook.com
+DOMAIN-SUFFIX,fnacebook.com
+DOMAIN-SUFFIX,fosebook.com
+DOMAIN-SUFFIX,fpacebook.com
+DOMAIN-SUFFIX,fqcebook.com
+DOMAIN-SUFFIX,fracebook.com
+DOMAIN-SUFFIX,freeb.com
+DOMAIN-SUFFIX,freebasics.com
+DOMAIN-SUFFIX,freebasics.net
+DOMAIN-SUFFIX,freebs.com
+DOMAIN-SUFFIX,freefacebook.com
+DOMAIN-SUFFIX,freefacebook.net
+DOMAIN-SUFFIX,freefacebookads.net
+DOMAIN-SUFFIX,freefblikes.com
+DOMAIN-SUFFIX,freindfeed.com
+DOMAIN-SUFFIX,frescolib.org
+DOMAIN-SUFFIX,friendbook.info
+DOMAIN-SUFFIX,friendfed.com
+DOMAIN-SUFFIX,friendfeed-api.com
+DOMAIN-SUFFIX,friendfeed-media.com
+DOMAIN-SUFFIX,friendfeedmedia.com
+DOMAIN-SUFFIX,fsacebok.com
+DOMAIN-SUFFIX,fscebook.com
+DOMAIN-SUFFIX,fundraisingwithfacebook.com
+DOMAIN-SUFFIX,funnyfacebook.org
+DOMAIN-SUFFIX,futureofbusinesssurvey.org
+DOMAIN-SUFFIX,gacebook.com
+DOMAIN-SUFFIX,gameroom.com
+DOMAIN-SUFFIX,gfacecbook.com
+DOMAIN-SUFFIX,groups.com
+DOMAIN-SUFFIX,hackerfacebook.com
+DOMAIN-SUFFIX,hackfacebook.com
+DOMAIN-SUFFIX,hackfacebookid.com
+DOMAIN-SUFFIX,hacklang.org
+DOMAIN-SUFFIX,hhvm.com
+DOMAIN-SUFFIX,hifacebook.info
+DOMAIN-SUFFIX,howtohackfacebook-account.com
+DOMAIN-SUFFIX,hsfacebook.com
+DOMAIN-SUFFIX,httpfacebook.com
+DOMAIN-SUFFIX,httpsfacebook.com
+DOMAIN-SUFFIX,httpwwwfacebook.com
+DOMAIN-SUFFIX,i.org
+DOMAIN-SUFFIX,ig.me
+DOMAIN-SUFFIX,igcdn.com
+DOMAIN-SUFFIX,igsonar.com
+DOMAIN-SUFFIX,igtv.com
+DOMAIN-SUFFIX,imstagram.com
+DOMAIN-SUFFIX,imtagram.com
+DOMAIN-SUFFIX,instaadder.com
+DOMAIN-SUFFIX,instachecker.com
+DOMAIN-SUFFIX,instafallow.com
+DOMAIN-SUFFIX,instafollower.com
+DOMAIN-SUFFIX,instagainer.com
+DOMAIN-SUFFIX,instagda.com
+DOMAIN-SUFFIX,instagify.com
+DOMAIN-SUFFIX,instagmania.com
+DOMAIN-SUFFIX,instagor.com
+DOMAIN-SUFFIX,instagram-brand.com
+DOMAIN-SUFFIX,instagram-engineering.com
+DOMAIN-SUFFIX,instagram-help.com
+DOMAIN-SUFFIX,instagram-press.com
+DOMAIN-SUFFIX,instagram-press.net
+DOMAIN-SUFFIX,instagramci.com
+DOMAIN-SUFFIX,instagramcn.com
+DOMAIN-SUFFIX,instagramdi.com
+DOMAIN-SUFFIX,instagramhashtags.net
+DOMAIN-SUFFIX,instagramhilecim.com
+DOMAIN-SUFFIX,instagramhilesi.org
+DOMAIN-SUFFIX,instagramium.com
+DOMAIN-SUFFIX,instagramizlenme.com
+DOMAIN-SUFFIX,instagramkusu.com
+DOMAIN-SUFFIX,instagramlogin.com
+DOMAIN-SUFFIX,instagramm.com
+DOMAIN-SUFFIX,instagramn.com
+DOMAIN-SUFFIX,instagrampartners.com
+DOMAIN-SUFFIX,instagramphoto.com
+DOMAIN-SUFFIX,instagramq.com
+DOMAIN-SUFFIX,instagramsepeti.com
+DOMAIN-SUFFIX,instagramtakipcisatinal.net
+DOMAIN-SUFFIX,instagramtakiphilesi.com
+DOMAIN-SUFFIX,instagramtips.com
+DOMAIN-SUFFIX,instagramtr.com
+DOMAIN-SUFFIX,instagran.com
+DOMAIN-SUFFIX,instagranm.com
+DOMAIN-SUFFIX,instagrem.com
+DOMAIN-SUFFIX,instagrm.com
+DOMAIN-SUFFIX,instagtram.com
+DOMAIN-SUFFIX,instagy.com
+DOMAIN-SUFFIX,instamgram.com
+DOMAIN-SUFFIX,instangram.com
+DOMAIN-SUFFIX,instanttelegram.com
+DOMAIN-SUFFIX,instaplayer.net
+DOMAIN-SUFFIX,instastyle.tv
+DOMAIN-SUFFIX,instgram.com
+DOMAIN-SUFFIX,intagram.com
+DOMAIN-SUFFIX,intagrm.com
+DOMAIN-SUFFIX,intgram.com
+DOMAIN-SUFFIX,ip6.static.sl-reverse.com
+DOMAIN-SUFFIX,kingstagram.com
+DOMAIN-SUFFIX,klik.me
+DOMAIN-SUFFIX,liverail.com
+DOMAIN-SUFFIX,liverail.tv
+DOMAIN-SUFFIX,lnstagram-help.com
+DOMAIN-SUFFIX,login-account.net
+DOMAIN-SUFFIX,makeitopen.com
+DOMAIN-SUFFIX,markzuckerberg.com
+DOMAIN-SUFFIX,mcrouter.net
+DOMAIN-SUFFIX,mcrouter.org
+DOMAIN-SUFFIX,messengerdevelopers.com
+DOMAIN-SUFFIX,midentsolutions.com
+DOMAIN-SUFFIX,mobilefacebook.com
+DOMAIN-SUFFIX,moneywithfacebook.com
+DOMAIN-SUFFIX,myfbfans.com
+DOMAIN-SUFFIX,nbabot.net
+DOMAIN-SUFFIX,newsfeed.com
+DOMAIN-SUFFIX,nextstop.com
+DOMAIN-SUFFIX,ocul.us
+DOMAIN-SUFFIX,oculus-china.com
+DOMAIN-SUFFIX,oculus2014.com
+DOMAIN-SUFFIX,oculus3d.com
+DOMAIN-SUFFIX,oculusblog.com
+DOMAIN-SUFFIX,oculusbrand.com
+DOMAIN-SUFFIX,oculuscasino.net
+DOMAIN-SUFFIX,oculusconnect.com
+DOMAIN-SUFFIX,oculusdiving.com
+DOMAIN-SUFFIX,oculusforbusiness.com
+DOMAIN-SUFFIX,oculusrift.com
+DOMAIN-SUFFIX,oculusvr.com
+DOMAIN-SUFFIX,ogp.me
+DOMAIN-SUFFIX,oninstagram.com
+DOMAIN-SUFFIX,online-deals.net
+DOMAIN-SUFFIX,online-instagram.com
+DOMAIN-SUFFIX,onlineinstagram.com
+DOMAIN-SUFFIX,opencreate.org
+DOMAIN-SUFFIX,opengraphprotocol.com
+DOMAIN-SUFFIX,opengraphprotocol.org
+DOMAIN-SUFFIX,powersunitedvr.com
+DOMAIN-SUFFIX,pyrobot.org
+DOMAIN-SUFFIX,reachtheworldonfacebook.com
+DOMAIN-SUFFIX,react.com
+DOMAIN-SUFFIX,reactjs.com
+DOMAIN-SUFFIX,reactjs.org
+DOMAIN-SUFFIX,recoiljs.org
+DOMAIN-SUFFIX,redkix.com
+DOMAIN-SUFFIX,rocksdb.com
+DOMAIN-SUFFIX,rocksdb.net
+DOMAIN-SUFFIX,shopfacebook.com
+DOMAIN-SUFFIX,sportsfacebook.com
+DOMAIN-SUFFIX,sportstream.com
+DOMAIN-SUFFIX,supportfacebook.com
+DOMAIN-SUFFIX,terragraph.com
+DOMAIN-SUFFIX,thefacebook.net
+DOMAIN-SUFFIX,thefind.com
+DOMAIN-SUFFIX,theinstagramhack.com
+DOMAIN-SUFFIX,toplayerserver.com
+DOMAIN-SUFFIX,viewpointsfromfacebook.com
+DOMAIN-SUFFIX,wa.me
+DOMAIN-SUFFIX,web-instagram.net
+DOMAIN-SUFFIX,whatsapp-plus.info
+DOMAIN-SUFFIX,whatsapp-plus.me
+DOMAIN-SUFFIX,whatsapp-plus.net
+DOMAIN-SUFFIX,whatsapp.biz
+DOMAIN-SUFFIX,whatsapp.cc
+DOMAIN-SUFFIX,whatsapp.info
+DOMAIN-SUFFIX,whatsapp.org
+DOMAIN-SUFFIX,whatsapp.tv
+DOMAIN-SUFFIX,whatsappbrand.com
+DOMAIN-SUFFIX,whyfacebook.com
+DOMAIN-SUFFIX,workplace.com
+DOMAIN-SUFFIX,workplaceusecases.com
+DOMAIN-SUFFIX,worldhack.com
+DOMAIN-SUFFIX,www-facebook.com
+DOMAIN-SUFFIX,wwwfacebok.com
+DOMAIN-SUFFIX,wwwfacebook.com
+DOMAIN-SUFFIX,wwwinstagram.com
+DOMAIN-SUFFIX,wwwmfacebook.com
+DOMAIN-SUFFIX,yogalayout.com
+DOMAIN-SUFFIX,zuckerberg.com
+DOMAIN-SUFFIX,zuckerberg.net
+
+# --- IP-CIDR：IPv4 网段（23 条）---
+IP-CIDR,108.168.176.192/26
+IP-CIDR,108.168.177.0/27
+IP-CIDR,108.168.180.96/27
+IP-CIDR,108.168.254.65/32
+IP-CIDR,108.168.255.224/32
+IP-CIDR,108.168.255.227/32
+IP-CIDR,108.177.8.0/21
+IP-CIDR,119.235.224.0/24
+IP-CIDR,119.235.232.0/24
+IP-CIDR,119.235.236.0/23
+IP-CIDR,129.134.0.0/17
+IP-CIDR,157.240.0.0/17
+IP-CIDR,169.45.248.118/32
+IP-CIDR,173.252.64.0/18
+IP-CIDR,3.123.36.126/32
+IP-CIDR,31.13.64.0/18
+IP-CIDR,35.157.215.84/32
+IP-CIDR,35.157.217.255/32
+IP-CIDR,52.58.209.134/32
+IP-CIDR,54.162.243.80/32
+IP-CIDR,54.173.34.141/32
+IP-CIDR,54.235.23.242/32
+IP-CIDR,54.93.124.31/32
+
+# --- IP-ASN：自治系统编号（1 条）---
+IP-ASN,32934
+
+# ############################################################################
+# 应用：Pixiv（3 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（3 条）---
+DOMAIN-SUFFIX,fanbox.cc
+DOMAIN-SUFFIX,pixiv.net
+DOMAIN-SUFFIX,pximg.net
+
+# ############################################################################
+# 应用：Sina（14 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（14 条）---
+DOMAIN-SUFFIX,leju.com
+DOMAIN-SUFFIX,miaopai.com
+DOMAIN-SUFFIX,sina.cn
+DOMAIN-SUFFIX,sina.com
+DOMAIN-SUFFIX,sina.com.cn
+DOMAIN-SUFFIX,sinaapp.cn
+DOMAIN-SUFFIX,sinaapp.com
+DOMAIN-SUFFIX,sinaimg.cn
+DOMAIN-SUFFIX,sinaimg.com
+DOMAIN-SUFFIX,weibo.cn
+DOMAIN-SUFFIX,weibo.com
+DOMAIN-SUFFIX,weibocdn.cn
+DOMAIN-SUFFIX,weibocdn.com
+DOMAIN-SUFFIX,xiaoka.tv
+
+# ############################################################################
+# 应用：Telegram（38 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（3 条）---
+DOMAIN,api.imem.app
+DOMAIN,api.swiftgram.app
+DOMAIN,updates.64gr.am
+
+# --- DOMAIN-SUFFIX：域名后缀（27 条）---
+DOMAIN-SUFFIX,appvillis.com
+DOMAIN-SUFFIX,cdn-telegram.org
+DOMAIN-SUFFIX,comments.app
+DOMAIN-SUFFIX,contest.com
+DOMAIN-SUFFIX,graph.org
+DOMAIN-SUFFIX,legra.ph
+DOMAIN-SUFFIX,mbrx.app
+DOMAIN-SUFFIX,nicegram.app
+DOMAIN-SUFFIX,nicegram.com
+DOMAIN-SUFFIX,nicegram.net
+DOMAIN-SUFFIX,nicegram.org
+DOMAIN-SUFFIX,quiz.directory
+DOMAIN-SUFFIX,stel.com
+DOMAIN-SUFFIX,t.me
+DOMAIN-SUFFIX,tdesktop.com
+DOMAIN-SUFFIX,telega.one
+DOMAIN-SUFFIX,telegra.ph
+DOMAIN-SUFFIX,telegram-cdn.org
+DOMAIN-SUFFIX,telegram.dog
+DOMAIN-SUFFIX,telegram.me
+DOMAIN-SUFFIX,telegram.org
+DOMAIN-SUFFIX,telegram.space
+DOMAIN-SUFFIX,telegramdownload.com
+DOMAIN-SUFFIX,telesco.pe
+DOMAIN-SUFFIX,tg.dev
+DOMAIN-SUFFIX,tx.me
+DOMAIN-SUFFIX,usercontent.dev
+
+# --- DOMAIN-KEYWORD：域名关键词（1 条）---
+DOMAIN-KEYWORD,telegram
+
+# --- IP-CIDR：IPv4 网段（4 条）---
+IP-CIDR,109.239.140.0/24,no-resolve
+IP-CIDR,149.154.160.0/20,no-resolve
+IP-CIDR,91.108.0.0/16,no-resolve
+IP-CIDR,95.161.64.0/20,no-resolve
+
+# --- IP-CIDR6：IPv6 网段（3 条）---
+IP-CIDR6,2001:67c:4e8::/48,no-resolve
+IP-CIDR6,2001:b28:f23d::/48,no-resolve
+IP-CIDR6,2001:b28:f23f::/48,no-resolve
+
+# ############################################################################
+# 应用：telegram ip（18 条）
+# ############################################################################
+
+# --- IP-CIDR：IPv4 网段（13 条）---
+IP-CIDR,109.239.140.0/24
+IP-CIDR,139.59.210.98/32
+IP-CIDR,149.154.160.0/20
+IP-CIDR,185.76.151.0/24
+IP-CIDR,196.55.216.167/32
+IP-CIDR,5.28.192.0/18
+IP-CIDR,67.198.55.0/24
+IP-CIDR,91.105.192.0/23
+IP-CIDR,91.108.16.0/21
+IP-CIDR,91.108.4.0/22
+IP-CIDR,91.108.56.0/22
+IP-CIDR,91.108.8.0/21
+IP-CIDR,95.161.64.0/20
+
+# --- IP-CIDR6：IPv6 网段（5 条）---
+IP-CIDR6,2001:67c:4e8::/48
+IP-CIDR6,2001:b28:f23c::/47
+IP-CIDR6,2001:b28:f23f::/48
+IP-CIDR6,2001:b28:f242::/48
+IP-CIDR6,2a0a:f280:203::/48
+
+# ############################################################################
+# 应用：truthsocial（6 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（4 条）---
+DOMAIN,1a-1791.com
+DOMAIN,api.mixpanel.com
+DOMAIN,sp.rmbl.ws
+DOMAIN,trk.bonsa.net
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,rumble.com
+DOMAIN-SUFFIX,truthsocial.com
+
+# ############################################################################
+# 应用：Twitter（3 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,twimg.co
+DOMAIN-SUFFIX,twimg.org
+
+# --- DOMAIN-KEYWORD：域名关键词（1 条）---
+DOMAIN-KEYWORD,twitter
+
+# ############################################################################
+# 应用：Whatsapp（14 条）
+# ############################################################################
+
+# --- DOMAIN-KEYWORD：域名关键词（1 条）---
+DOMAIN-KEYWORD,whatsapp
+
+# --- IP-CIDR：IPv4 网段（13 条）---
+IP-CIDR,108.168.174.0/16,no-resolve
+IP-CIDR,158.85.224.160/27,no-resolve
+IP-CIDR,158.85.46.128/27,no-resolve
+IP-CIDR,158.85.5.192/27,no-resolve
+IP-CIDR,173.192.222.160/27,no-resolve
+IP-CIDR,173.192.231.32/27,no-resolve
+IP-CIDR,174.37.243.0/16,no-resolve
+IP-CIDR,184.173.128.0/17,no-resolve
+IP-CIDR,208.43.122.128/27,no-resolve
+IP-CIDR,34.224.0.0/12,no-resolve
+IP-CIDR,50.22.198.204/30,no-resolve
+IP-CIDR,69.171.235.0/16,no-resolve
+IP-CIDR,75.126.150.0/16,no-resolve
+
+# ############################################################################
+# 应用：Zoom（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,zoom.us
+DOMAIN-SUFFIX,zoomgov.com
+
+# ############################################################################
+# 应用：WhatsApp 补全（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,whatsapp.com
+DOMAIN-SUFFIX,whatsapp.net
+
+# ############################################################################
+# 应用：Signal（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,signal.org
+
+# ############################################################################
+# 应用：Viber（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,viber.com
+
+# ############################################################################
+# 应用：Snapchat（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,sc-cdn.net
+DOMAIN-SUFFIX,snapchat.com
+
+# ############################################################################
+# 应用：LinkedIn（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,licdn.com
+DOMAIN-SUFFIX,linkedin.com
+
+# ############################################################################
+# 应用：Reddit（3 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（3 条）---
+DOMAIN-SUFFIX,reddit.com
+DOMAIN-SUFFIX,redditmedia.com
+DOMAIN-SUFFIX,redditstatic.com
+
+# ############################################################################
+# 应用：Tinder（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,gotinder.com
+DOMAIN-SUFFIX,tinder.com
+
+# ############################################################################
+# 应用：Bumble（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,bumble.com
+
+# ############################################################################
+# 应用：Badoo（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,badoo.com
+
+# ############################################################################
+# 应用：Match（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,match.com
+
+# ############################################################################
+# 应用：Plenty of Fish（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,pof.com
+
+# ############################################################################
+# 应用：Telegram 官方 IP（10 条）
+# ############################################################################
+
+# --- IP-CIDR：IPv4 网段（8 条）---
+IP-CIDR,185.76.151.0/24,no-resolve
+IP-CIDR,91.105.192.0/23,no-resolve
+IP-CIDR,91.108.12.0/22,no-resolve
+IP-CIDR,91.108.16.0/22,no-resolve
+IP-CIDR,91.108.20.0/22,no-resolve
+IP-CIDR,91.108.4.0/22,no-resolve
+IP-CIDR,91.108.56.0/22,no-resolve
+IP-CIDR,91.108.8.0/22,no-resolve
+
+# --- IP-CIDR6：IPv6 网段（2 条）---
+IP-CIDR6,2001:b28:f23c::/48,no-resolve
+IP-CIDR6,2a0a:f280::/32,no-resolve
+
