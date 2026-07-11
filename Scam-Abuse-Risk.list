@@ -2,11 +2,11 @@
 # 用途：辅助识别经常被诈骗、洗钱、社交工程或远程控制滥用的正规服务流量。
 # 注意：命中仅表示应用流量，不代表用户、账户或通信内容存在违法行为。
 # 不应单独依据本文件自动封禁、定罪或认定诈骗。
-# 中国大陆应用与服务依照项目当前策略排除。
+# 中国大陆通用应用依照项目当前策略排除；AI 专项规则按要求完整保留。
 # Telegram CIDR source: https://core.telegram.org/resources/cidr.txt
 # Research: FBI IC3 2024 Annual Report; U.S. FTC scam guidance.
 # Generated: 2026-07-12
-# Rules: 1534; scenarios: 3
+# Rules: 1758; scenarios: 4
 
 # ==============================================================================
 # 风险场景：金融、支付与数字资产（31 个应用/规则集，741 条）
@@ -2021,4 +2021,324 @@ IP-CIDR,91.108.8.0/22,no-resolve
 # --- IP-CIDR6：IPv6 网段（2 条）---
 IP-CIDR6,2001:b28:f23c::/48,no-resolve
 IP-CIDR6,2a0a:f280::/32,no-resolve
+
+# ==============================================================================
+# 风险场景：人工智能与 AI 工具（11 个应用/规则集，224 条）
+# ==============================================================================
+
+# ############################################################################
+# 应用：OpenAI / ChatGPT（33 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（7 条）---
+DOMAIN,browser-intake-datadoghq.com
+DOMAIN,chat.openai.com.cdn.cloudflare.net
+DOMAIN,openai-api.arkoselabs.com
+DOMAIN,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net
+DOMAIN,openaicomproductionae4b.blob.core.windows.net
+DOMAIN,production-openaicom-storage.azureedge.net
+DOMAIN,static.cloudflareinsights.com
+
+# --- DOMAIN-SUFFIX：域名后缀（22 条）---
+DOMAIN-SUFFIX,ai.com
+DOMAIN-SUFFIX,api.statsig.com
+DOMAIN-SUFFIX,challenges.cloudflare.com
+DOMAIN-SUFFIX,chatgpt.com
+DOMAIN-SUFFIX,chatgpt.livekit.cloud
+DOMAIN-SUFFIX,client-api.arkoselabs.com
+DOMAIN-SUFFIX,events.statsigapi.net
+DOMAIN-SUFFIX,featuregates.org
+DOMAIN-SUFFIX,gvt1.com
+DOMAIN-SUFFIX,gvt2.com
+DOMAIN-SUFFIX,gvt3.com
+DOMAIN-SUFFIX,host.livekit.cloud
+DOMAIN-SUFFIX,launchdarkly.com
+DOMAIN-SUFFIX,msftconnecttest.com
+DOMAIN-SUFFIX,oaistatic.com
+DOMAIN-SUFFIX,oaiusercontent.com
+DOMAIN-SUFFIX,observeit.net
+DOMAIN-SUFFIX,openai.com
+DOMAIN-SUFFIX,openaiapi-site.azureedge.net
+DOMAIN-SUFFIX,openaicom.imgix.net
+DOMAIN-SUFFIX,sfx.ms
+DOMAIN-SUFFIX,turn.livekit.cloud
+
+# --- DOMAIN-KEYWORD：域名关键词（1 条）---
+DOMAIN-KEYWORD,openai
+
+# --- IP-CIDR：IPv4 网段（2 条）---
+IP-CIDR,24.199.123.28/32
+IP-CIDR,64.23.132.171/32
+
+# --- IP-ASN：自治系统编号（1 条）---
+IP-ASN,20473
+
+# ############################################################################
+# 应用：Anthropic / Claude（28 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（6 条）---
+DOMAIN,anthropic-com.ghost.io
+DOMAIN,anthropic.auth0.com
+DOMAIN,anthropic.com.cdn.cloudflare.net
+DOMAIN,browser-intake-us5-datadoghq.com
+DOMAIN,cdn.usefathom.com
+DOMAIN,servd-anthropic-website.b-cdn.net
+
+# --- DOMAIN-SUFFIX：域名后缀（15 条）---
+DOMAIN-SUFFIX,anthropic-com.ghost.io
+DOMAIN-SUFFIX,anthropic.auth0.com
+DOMAIN-SUFFIX,anthropic.com
+DOMAIN-SUFFIX,anthropic.com.cdn.cloudflare.net
+DOMAIN-SUFFIX,browser-intake-us5-datadoghq.com
+DOMAIN-SUFFIX,cdn.anthropic.com
+DOMAIN-SUFFIX,cdn.usefathom.com
+DOMAIN-SUFFIX,clau.de
+DOMAIN-SUFFIX,claude.ai
+DOMAIN-SUFFIX,claude.com
+DOMAIN-SUFFIX,claudemcpclient.com
+DOMAIN-SUFFIX,claudemcpcontent.com
+DOMAIN-SUFFIX,claudeusercontent.com
+DOMAIN-SUFFIX,servd-anthropic-website.b-cdn.net
+DOMAIN-SUFFIX,statsigapi.net
+
+# --- IP-CIDR：IPv4 网段（3 条）---
+IP-CIDR,160.79.104.0/21,no-resolve
+IP-CIDR,160.79.104.0/23
+IP-CIDR,209.249.57.0/24
+
+# --- IP-CIDR6：IPv6 网段（3 条）---
+IP-CIDR6,2607:6bc0:11::/48
+IP-CIDR6,2607:6bc0::/32,no-resolve
+IP-CIDR6,2607:6bc0::/48
+
+# --- IP-ASN：自治系统编号（1 条）---
+IP-ASN,399358,no-resolve
+
+# ############################################################################
+# 应用：Google Gemini（13 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（4 条）---
+DOMAIN,ai.google.dev
+DOMAIN,alkalimakersuite-pa.clients6.google.com
+DOMAIN,makersuite.google.com
+DOMAIN,proactivebackend-pa.googleapis.com
+
+# --- DOMAIN-SUFFIX：域名后缀（6 条）---
+DOMAIN-SUFFIX,bard.google.com
+DOMAIN-SUFFIX,deepmind.com
+DOMAIN-SUFFIX,deepmind.google
+DOMAIN-SUFFIX,gemini.google.com
+DOMAIN-SUFFIX,generativeai.google
+DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com
+
+# --- DOMAIN-KEYWORD：域名关键词（3 条）---
+DOMAIN-KEYWORD,colab
+DOMAIN-KEYWORD,developerprofiles
+DOMAIN-KEYWORD,generativelanguage
+
+# ############################################################################
+# 应用：Cursor（5 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（5 条）---
+DOMAIN-SUFFIX,cursor-cdn.com
+DOMAIN-SUFFIX,cursor.com
+DOMAIN-SUFFIX,cursor.sh
+DOMAIN-SUFFIX,cursorapi.com
+DOMAIN-SUFFIX,workos.com
+
+# ############################################################################
+# 应用：Windsurf / Codeium（2 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（2 条）---
+DOMAIN-SUFFIX,codeium.com
+DOMAIN-SUFFIX,windsurf.com
+
+# ############################################################################
+# 应用：AugmentCode（1 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（1 条）---
+DOMAIN-SUFFIX,augmentcode.com
+
+# ############################################################################
+# 应用：Trae（11 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（11 条）---
+DOMAIN-SUFFIX,abtestvm-sg.bytedance.com
+DOMAIN-SUFFIX,bytegate-sg.byteintlapi.com
+DOMAIN-SUFFIX,byteoversea.com
+DOMAIN-SUFFIX,lf3-static.bytednsdoc.com
+DOMAIN-SUFFIX,sf16-short-sg.bytedapm.com
+DOMAIN-SUFFIX,starling.zijieapi.com
+DOMAIN-SUFFIX,trae-api-sg.mchost.guru
+DOMAIN-SUFFIX,trae.ai
+DOMAIN-SUFFIX,trae.com.cn
+DOMAIN-SUFFIX,tron-sg.bytelemon.com
+DOMAIN-SUFFIX,tron.jiyunhudong.com
+
+# ############################################################################
+# 应用：Apple Intelligence（2 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（2 条）---
+DOMAIN,apple-relay.apple.com
+DOMAIN,apple-relay.cloudflare.com
+
+# ############################################################################
+# 应用：Meta AI（23 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（23 条）---
+DOMAIN-SUFFIX,accountkit.com
+DOMAIN-SUFFIX,f8.com
+DOMAIN-SUFFIX,facebook.design
+DOMAIN-SUFFIX,facebook.hu
+DOMAIN-SUFFIX,facebook.in
+DOMAIN-SUFFIX,facebook.nl
+DOMAIN-SUFFIX,facebook.se
+DOMAIN-SUFFIX,facebookmail.com
+DOMAIN-SUFFIX,facebookquotes4u.com
+DOMAIN-SUFFIX,fbaddins.com
+DOMAIN-SUFFIX,fbsbx.com
+DOMAIN-SUFFIX,fbworkmail.com
+DOMAIN-SUFFIX,friendfeed.com
+DOMAIN-SUFFIX,internet.org
+DOMAIN-SUFFIX,m.me
+DOMAIN-SUFFIX,messenger.com
+DOMAIN-SUFFIX,meta.ai
+DOMAIN-SUFFIX,meta.com
+DOMAIN-SUFFIX,oculus.com
+DOMAIN-SUFFIX,oculuscdn.com
+DOMAIN-SUFFIX,parse.com
+DOMAIN-SUFFIX,rocksdb.org
+DOMAIN-SUFFIX,thefacebook.com
+
+# ############################################################################
+# 应用：xAI / Grok（29 条）
+# ############################################################################
+
+# --- DOMAIN-SUFFIX：域名后缀（23 条）---
+DOMAIN-SUFFIX,ads-twitter.com
+DOMAIN-SUFFIX,cms-twdigitalassets.com
+DOMAIN-SUFFIX,periscope.tv
+DOMAIN-SUFFIX,pscp.tv
+DOMAIN-SUFFIX,t.co
+DOMAIN-SUFFIX,tellapart.com
+DOMAIN-SUFFIX,tweetdeck.com
+DOMAIN-SUFFIX,twimg.com
+DOMAIN-SUFFIX,twitpic.com
+DOMAIN-SUFFIX,twitter.biz
+DOMAIN-SUFFIX,twitter.com
+DOMAIN-SUFFIX,twitter.jp
+DOMAIN-SUFFIX,twittercommunity.com
+DOMAIN-SUFFIX,twitterflightschool.com
+DOMAIN-SUFFIX,twitterinc.com
+DOMAIN-SUFFIX,twitteroauth.com
+DOMAIN-SUFFIX,twitterstat.us
+DOMAIN-SUFFIX,twtrdns.net
+DOMAIN-SUFFIX,twttr.com
+DOMAIN-SUFFIX,twttr.net
+DOMAIN-SUFFIX,twvid.com
+DOMAIN-SUFFIX,vine.co
+DOMAIN-SUFFIX,x.com
+
+# --- IP-CIDR：IPv4 网段（6 条）---
+IP-CIDR,192.133.76.0/22
+IP-CIDR,199.59.148.0/22
+IP-CIDR,199.96.56.0/21
+IP-CIDR,202.160.128.0/22
+IP-CIDR,209.237.192.0/19
+IP-CIDR,69.195.160.0/19
+
+# ############################################################################
+# 应用：其他 AI 服务（77 条）
+# ############################################################################
+
+# --- DOMAIN：精确域名（12 条）---
+DOMAIN,aistudio.google.com
+DOMAIN,api.githubcopilot.com
+DOMAIN,api.groq.com
+DOMAIN,api.together.xyz
+DOMAIN,bard.google.com
+DOMAIN,console.groq.com
+DOMAIN,copilot-proxy.githubusercontent.com
+DOMAIN,gemini.google.com
+DOMAIN,generativelanguage.googleapis.com
+DOMAIN,notebooklm.google.com
+DOMAIN,o33249.ingest.sentry.io
+DOMAIN,sydney.bing.com
+
+# --- DOMAIN-SUFFIX：域名后缀（63 条）---
+DOMAIN-SUFFIX,agentclientprotocol.com
+DOMAIN-SUFFIX,ai.azure.com
+DOMAIN-SUFFIX,aistudio.google.com
+DOMAIN-SUFFIX,anythingllm.com
+DOMAIN-SUFFIX,chutes.ai
+DOMAIN-SUFFIX,clawhub.ai
+DOMAIN-SUFFIX,clipdrop.co
+DOMAIN-SUFFIX,codeiumdata.com
+DOMAIN-SUFFIX,coderabbit.ai
+DOMAIN-SUFFIX,coderabbit.gallery.vsassets.io
+DOMAIN-SUFFIX,cohere.ai
+DOMAIN-SUFFIX,cohere.com
+DOMAIN-SUFFIX,copilot.cloud.microsoft
+DOMAIN-SUFFIX,copilot.microsoft.com
+DOMAIN-SUFFIX,crewai.com
+DOMAIN-SUFFIX,crixet.com
+DOMAIN-SUFFIX,devin.ai
+DOMAIN-SUFFIX,diabrowser.com
+DOMAIN-SUFFIX,diabrowser.engineering
+DOMAIN-SUFFIX,dify.ai
+DOMAIN-SUFFIX,duck.ai
+DOMAIN-SUFFIX,envato-static.com
+DOMAIN-SUFFIX,envato.com
+DOMAIN-SUFFIX,envatousercontent.com
+DOMAIN-SUFFIX,grazie.ai
+DOMAIN-SUFFIX,grazie.aws.intellij.net
+DOMAIN-SUFFIX,groq.com
+DOMAIN-SUFFIX,h2o.ai
+DOMAIN-SUFFIX,jasper.ai
+DOMAIN-SUFFIX,jetbrains.ai
+DOMAIN-SUFFIX,kiro.dev
+DOMAIN-SUFFIX,langchain.com
+DOMAIN-SUFFIX,liveperson.net
+DOMAIN-SUFFIX,lmstudio.ai
+DOMAIN-SUFFIX,lovart.ai
+DOMAIN-SUFFIX,lpsnmedia.net
+DOMAIN-SUFFIX,makersuite.google.com
+DOMAIN-SUFFIX,manus.im
+DOMAIN-SUFFIX,manuscdn.com
+DOMAIN-SUFFIX,mistral.ai
+DOMAIN-SUFFIX,mozilla.ai
+DOMAIN-SUFFIX,notebooklm.google
+DOMAIN-SUFFIX,notebooklm.google.com
+DOMAIN-SUFFIX,ollama.com
+DOMAIN-SUFFIX,openart.ai
+DOMAIN-SUFFIX,openclaw.ai
+DOMAIN-SUFFIX,openrouter.ai
+DOMAIN-SUFFIX,openspec.dev
+DOMAIN-SUFFIX,oystermercury.top
+DOMAIN-SUFFIX,perplexity.ai
+DOMAIN-SUFFIX,plannotator.ai
+DOMAIN-SUFFIX,poe.com
+DOMAIN-SUFFIX,poecdn.net
+DOMAIN-SUFFIX,sora.com
+DOMAIN-SUFFIX,spicywriter.com
+DOMAIN-SUFFIX,tapnow.ai
+DOMAIN-SUFFIX,themeforest.net
+DOMAIN-SUFFIX,together.ai
+DOMAIN-SUFFIX,windsurf.build
+DOMAIN-SUFFIX,x.ai
+DOMAIN-SUFFIX,youmind.ai
+DOMAIN-SUFFIX,youmind.com
+DOMAIN-SUFFIX,youmind.site
+
+# --- DOMAIN-KEYWORD：域名关键词（2 条）---
+DOMAIN-KEYWORD,anthropic
+DOMAIN-KEYWORD,claude
 
