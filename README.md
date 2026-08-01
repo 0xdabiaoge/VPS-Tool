@@ -17,7 +17,13 @@
 ```
 (curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/tc_limit.sh -o /usr/local/bin/tc || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/tc_limit.sh -o /usr/local/bin/tc) && chmod +x /usr/local/bin/tc && tc
 ```
+
 **DDNS域名设置：cfddns**
 ```
 (curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/Cloudflare-DDNS.sh -o /usr/local/bin/cfddns || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/Cloudflare-DDNS.sh -o /usr/local/bin/cfddns) && chmod +x /usr/local/bin/cfddns && cfddns
+```
+
+**HE隧道部署**
+```
+(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/he-tunnel.sh -o /usr/local/bin/he || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/he-tunnel.sh -o /usr/local/bin/he) && chmod +x /usr/local/bin/he && he
 ```
