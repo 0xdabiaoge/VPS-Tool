@@ -27,3 +27,8 @@
 ```
 (curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/he-tunnel.sh -o /usr/local/bin/he || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/he-tunnel.sh -o /usr/local/bin/he) && chmod +x /usr/local/bin/he && he
 ```
+
+**域名跳转与阻断：tj**
+```
+(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/site-policy.sh -o /usr/local/bin/tj || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/site-policy.sh -o /usr/local/bin/tj) && chmod +x /usr/local/bin/tj && tj
+```
