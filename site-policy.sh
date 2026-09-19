@@ -163,7 +163,8 @@ select_target_mode() {
     echo "请选择策略作用目标："
     echo "  1) host   - 宿主机自身出网拦截 (针对本机进程/curl/脚本出网)"
     echo "  2) bridge - LXC/Incus 容器网桥拦截 (针对容器网桥流量)"
-    read -r -p "请选择 [1/2] (直接回车默认 1): " mode_choice || true
+    echo "  0) 取消并返回上一级菜单"
+    read -r -p "请选择 [1/2, 0 返回] (默认 1): " mode_choice || true
     mode_choice="${mode_choice:-1}"
   fi
 
@@ -173,14 +174,23 @@ select_target_mode() {
       BRIDGE_IF="lo"
       LANDING_IP="127.0.0.1"
       log "已选择 [宿主机自身出网模式]，落地 IP: 127.0.0.1"
+      return 0
       ;;
     2|bridge)
       TARGET_MODE="bridge"
-      select_bridge
+      if ! select_bridge; then
+        return 1
+      fi
       log "已选择 [容器网桥模式]，网桥: ${BRIDGE_IF}，落地 IP: ${LANDING_IP}"
+      return 0
+      ;;
+    0|q|Q)
+      log "已取消选择"
+      return 1
       ;;
     *)
-      die "输入无效"
+      warn "输入无效，已取消"
+      return 1
       ;;
   esac
 }
@@ -190,8 +200,11 @@ select_bridge() {
   mapfile -t candidates < <(detect_bridge_candidates)
 
   if [[ "${#candidates[@]}" -eq 0 ]]; then
-    read -r -p "未自动检测到网桥，请输入网桥名 (如 incusbr0/lxdbr0/lxcbr0): " iface
-    [[ -n "${iface}" ]] || die "网桥名不能为空"
+    read -r -p "未自动检测到网桥，请输入网桥名 (输入 0 返回): " iface || true
+    if [[ -z "${iface}" || "${iface}" == "0" || "${iface}" == "q" ]]; then
+      log "已取消"
+      return 1
+    fi
   else
     echo "检测到以下可用网桥："
     idx=1
@@ -200,17 +213,23 @@ select_bridge() {
       printf '  %d) %s %s\n' "${idx}" "${iface}" "${ip4:+(${ip4})}"
       idx=$((idx + 1))
     done
-    read -r -p "请选择网桥 [1-${#candidates[@]}]: " choice
-    [[ "${choice}" =~ ^[0-9]+$ ]] || die "输入无效"
-    (( choice >= 1 && choice <= ${#candidates[@]} )) || die "选择超出范围"
+    echo "  0) 取消并返回"
+    read -r -p "请选择网桥 [1-${#candidates[@]}, 0 返回]: " choice || true
+    if [[ "${choice:-0}" == "0" || "${choice}" == "q" || "${choice}" == "Q" ]]; then
+      log "已取消"
+      return 1
+    fi
+    [[ "${choice}" =~ ^[0-9]+$ ]] || { warn "输入无效"; return 1; }
+    (( choice >= 1 && choice <= ${#candidates[@]} )) || { warn "选择超出范围"; return 1; }
     iface="${candidates[$((choice - 1))]}"
   fi
 
   ip4="$(bridge_ipv4 "${iface}")"
-  [[ -n "${ip4}" ]] || die "网桥 ${iface} 没有分配可用的 IPv4 地址"
+  [[ -n "${ip4}" ]] || { err "网桥 ${iface} 没有分配可用的 IPv4 地址"; return 1; }
 
   BRIDGE_IF="${iface}"
   LANDING_IP="${ip4}"
+  return 0
 }
 
 # ----------------- 配置读取与保存 -----------------
@@ -316,41 +335,169 @@ remove_domain_from_lists() {
 
 # ----------------- 规则增删查 -----------------
 add_block() {
-  local domain
+  need_root
   ensure_dirs
-  domain="$(normalize_domain "${1:-${DEFAULT_DOMAIN}}")"
-  validate_domain "${domain}" || die "域名格式无效: ${1:-}"
-  remove_domain_from_lists "${domain}"
-  printf '%s\n' "${domain}" >>"${BLOCK_LIST}"
-  log "已成功添加阻断域名: ${domain}"
-  generate_all
-  reload_services
+  local raw_input="$*"
+
+  if [[ -z "${raw_input// /}" ]]; then
+    echo
+    echo "=================================================="
+    echo "                 添加阻断域名                     "
+    echo "=================================================="
+    echo "提示: 支持一次性输入多个域名，使用【空格】或【逗号】分隔"
+    echo "      例如: bad1.com bad2.com, bad3.com"
+    echo "      输入 0 或直接回车可返回上一级菜单"
+    echo "--------------------------------------------------"
+    read -r -p "请输入要阻断的域名: " raw_input || true
+  fi
+
+  raw_input="$(echo "${raw_input}" | tr ',' ' ')"
+
+  if [[ -z "${raw_input// /}" || "${raw_input// /}" == "0" || "${raw_input// /}" == "q" || "${raw_input// /}" == "Q" ]]; then
+    log "已取消操作，未添加任何规则"
+    return 0
+  fi
+
+  local count=0
+  local item domain
+  for item in ${raw_input}; do
+    domain="$(normalize_domain "${item}")"
+    if ! validate_domain "${domain}"; then
+      warn "跳过格式无效的域名: [${item}]"
+      continue
+    fi
+    remove_domain_from_lists "${domain}"
+    printf '%s\n' "${domain}" >>"${BLOCK_LIST}"
+    log "已添加阻断: ${domain}"
+    count=$((count + 1))
+  done
+
+  if [[ ${count} -gt 0 ]]; then
+    generate_all
+    reload_services
+    log "成功添加 ${count} 个阻断域名！"
+  else
+    warn "未能添加任何有效域名"
+  fi
 }
 
 add_redirect() {
-  local domain url
+  need_root
   ensure_dirs
-  domain="$(normalize_domain "${1:-${DEFAULT_DOMAIN}}")"
-  url="${2:-${DEFAULT_REDIRECT_URL}}"
-  validate_domain "${domain}" || die "域名格式无效: ${1:-}"
-  validate_url "${url}" || die "跳转 URL 格式不规范或包含非法字符"
-  remove_domain_from_lists "${domain}"
-  printf '%s %s\n' "${domain}" "${url}" >>"${REDIRECT_LIST}"
-  log "已成功添加跳转域名: ${domain} -> ${url}"
-  generate_all
-  reload_services
+  local domains_input=""
+  local target_url=""
+
+  # 如果是通过命令行传参 (CLI)
+  if [[ $# -ge 2 ]]; then
+    local last_arg="${@: -1}"
+    if [[ "${last_arg}" == http://* || "${last_arg}" == https://* ]]; then
+      target_url="${last_arg}"
+      domains_input="${*:1:$#-1}"
+    else
+      err "最后一个参数必须是跳转目标 URL (以 http:// 或 https:// 开头)"
+      return 1
+    fi
+  else
+    echo
+    echo "=================================================="
+    echo "                 添加跳转域名                     "
+    echo "=================================================="
+    echo "提示: 支持一次性输入多个域名，跳转到同一目标 URL"
+    echo "      使用【空格】或【逗号】分隔多个域名"
+    echo "      输入 0 或直接回车可返回上一级菜单"
+    echo "--------------------------------------------------"
+    read -r -p "1. 请输入要跳转的域名: " domains_input || true
+
+    domains_input="$(echo "${domains_input}" | tr ',' ' ')"
+    if [[ -z "${domains_input// /}" || "${domains_input// /}" == "0" || "${domains_input// /}" == "q" || "${domains_input// /}" == "Q" ]]; then
+      log "已取消操作"
+      return 0
+    fi
+
+    echo
+    echo "提示: 输入目标跳转 URL (例如 https://ping0.cc)"
+    echo "      输入 0 或直接回车可取消并返回上一级菜单"
+    read -r -p "2. 请输入目标 URL: " target_url || true
+
+    if [[ -z "${target_url// /}" || "${target_url// /}" == "0" || "${target_url// /}" == "q" || "${target_url// /}" == "Q" ]]; then
+      log "已取消操作"
+      return 0
+    fi
+  fi
+
+  domains_input="$(echo "${domains_input}" | tr ',' ' ')"
+
+  if ! validate_url "${target_url}"; then
+    err "跳转目标 URL 格式不规范或包含非法字符: ${target_url}"
+    return 1
+  fi
+
+  local count=0
+  local item domain
+  for item in ${domains_input}; do
+    domain="$(normalize_domain "${item}")"
+    if ! validate_domain "${domain}"; then
+      warn "跳过格式无效的域名: [${item}]"
+      continue
+    fi
+    remove_domain_from_lists "${domain}"
+    printf '%s %s\n' "${domain}" "${target_url}" >>"${REDIRECT_LIST}"
+    log "已添加跳转: ${domain} -> ${target_url}"
+    count=$((count + 1))
+  done
+
+  if [[ ${count} -gt 0 ]]; then
+    generate_all
+    reload_services
+    log "成功添加 ${count} 个跳转域名！"
+  else
+    warn "未能添加任何有效域名"
+  fi
 }
 
 delete_domain() {
-  local domain
+  need_root
   ensure_dirs
-  domain="$(normalize_domain "${1:-}")"
-  [[ -n "${domain}" ]] || die "必须指定要删除的域名"
-  validate_domain "${domain}" || die "域名格式无效: ${domain}"
-  remove_domain_from_lists "${domain}"
-  log "已删除域名规则: ${domain}"
-  generate_all
-  reload_services
+  local raw_input="$*"
+
+  if [[ -z "${raw_input// /}" ]]; then
+    echo
+    echo "=================================================="
+    echo "                 删除域名规则                     "
+    echo "=================================================="
+    echo "提示: 支持一次性输入多个域名，使用【空格】或【逗号】分隔"
+    echo "      输入 0 或直接回车可返回上一级菜单"
+    echo "--------------------------------------------------"
+    read -r -p "请输入要删除的域名: " raw_input || true
+  fi
+
+  raw_input="$(echo "${raw_input}" | tr ',' ' ')"
+
+  if [[ -z "${raw_input// /}" || "${raw_input// /}" == "0" || "${raw_input// /}" == "q" || "${raw_input// /}" == "Q" ]]; then
+    log "已取消操作"
+    return 0
+  fi
+
+  local count=0
+  local item domain
+  for item in ${raw_input}; do
+    domain="$(normalize_domain "${item}")"
+    if ! validate_domain "${domain}"; then
+      warn "跳过格式无效的域名: [${item}]"
+      continue
+    fi
+    remove_domain_from_lists "${domain}"
+    log "已删除域名规则: ${domain}"
+    count=$((count + 1))
+  done
+
+  if [[ ${count} -gt 0 ]]; then
+    generate_all
+    reload_services
+    log "成功删除 ${count} 个域名规则！"
+  else
+    warn "未删除任何有效规则"
+  fi
 }
 
 list_rules() {
@@ -398,11 +545,13 @@ set_block_mode() {
     echo "请选择阻断响应模式："
     echo "  1) null - DNS 返回 0.0.0.0/:: (秒级阻断，不产生任何 HTTP 连接，高并发推荐)"
     echo "  2) page - DNS 返回落地 IP，由 Nginx 返回 403 页面提示"
-    read -r -p "请选择 [1/2] (直接回车默认 1): " choice || true
-    case "${choice:-1}" in
+    echo "  0) 取消并返回上一级菜单"
+    read -r -p "请选择 [1/2, 0 返回]: " choice || true
+    case "${choice:-0}" in
       1|null) BLOCK_MODE="null" ;;
       2|page) BLOCK_MODE="page" ;;
-      *) die "输入无效" ;;
+      0|q|Q) log "已取消切换"; return 0 ;;
+      *) warn "输入无效，已取消切换"; return 0 ;;
     esac
   fi
 
@@ -427,11 +576,13 @@ set_https_mode() {
     echo "请选择是否开启 HTTPS 拦截支持："
     echo "  1) 开启 - 监听 443 端口，通过本地 Root CA 签发证书，支持 HTTPS 302 跳转与 403 提示"
     echo "  2) 关闭 - 仅监听 80 端口，HTTPS 请求将直接被拒绝"
-    read -r -p "请选择 [1/2] (直接回车默认 1): " choice || true
-    case "${choice:-1}" in
+    echo "  0) 取消并返回上一级菜单"
+    read -r -p "请选择 [1/2, 0 返回]: " choice || true
+    case "${choice:-0}" in
       1|on) ENABLE_HTTPS="1" ;;
       2|off) ENABLE_HTTPS="0" ;;
-      *) die "输入无效" ;;
+      0|q|Q) log "已取消切换"; return 0 ;;
+      *) warn "输入无效，已取消切换"; return 0 ;;
     esac
   fi
 
@@ -444,11 +595,12 @@ set_https_mode() {
 set_target_mode() {
   need_root
   load_config
-  select_target_mode "${1:-}"
-  save_config
-  generate_all
-  restart_services
-  log "作用目标已成功切换为: ${TARGET_MODE}"
+  if select_target_mode "${1:-}"; then
+    save_config
+    generate_all
+    restart_services
+    log "作用目标已成功切换为: ${TARGET_MODE}"
+  fi
 }
 
 # ----------------- 服务与配置文件生成 -----------------
@@ -912,29 +1064,56 @@ menu() {
     read -r -p "请选择操作 [0-10, u]: " choice || true
 
     case "${choice:-0}" in
-      1) install_policy ;;
+      1)
+        install_policy
+        echo
+        read -r -p "按回车键返回主菜单..." || true
+        ;;
       2)
-        read -r -p "请输入要阻断的域名 (直接回车默认 ${DEFAULT_DOMAIN}): " d || true
-        d="${d:-${DEFAULT_DOMAIN}}"
-        add_block "${d}"
+        add_block ""
+        echo
+        read -r -p "按回车键返回主菜单..." || true
         ;;
       3)
-        read -r -p "请输入要跳转的域名 (直接回车默认 ${DEFAULT_DOMAIN}): " d || true
-        d="${d:-${DEFAULT_DOMAIN}}"
-        read -r -p "请输入目标 URL (直接回车默认 ${DEFAULT_REDIRECT_URL}): " u || true
-        u="${u:-${DEFAULT_REDIRECT_URL}}"
-        add_redirect "${d}" "${u}"
+        add_redirect
+        echo
+        read -r -p "按回车键返回主菜单..." || true
         ;;
       4)
-        read -r -p "请输入要删除的域名规则: " d || true
-        delete_domain "${d}"
+        delete_domain ""
+        echo
+        read -r -p "按回车键返回主菜单..." || true
         ;;
-      5) list_rules ;;
-      6) set_block_mode ;;
-      7) set_https_mode ;;
-      8) set_target_mode ;;
-      9) reload_services ;;
-      10) self_test ;;
+      5)
+        list_rules
+        echo
+        read -r -p "按回车键返回主菜单..." || true
+        ;;
+      6)
+        set_block_mode
+        echo
+        read -r -p "按回车键返回主菜单..." || true
+        ;;
+      7)
+        set_https_mode
+        echo
+        read -r -p "按回车键返回主菜单..." || true
+        ;;
+      8)
+        set_target_mode
+        echo
+        read -r -p "按回车键返回主菜单..." || true
+        ;;
+      9)
+        reload_services
+        echo
+        read -r -p "按回车键返回主菜单..." || true
+        ;;
+      10)
+        self_test
+        echo
+        read -r -p "按回车键返回主菜单..." || true
+        ;;
       u|U)
         uninstall_policy
         exit 0
@@ -958,18 +1137,21 @@ main() {
       ;;
     add-block|block)
       need_root
-      [[ $# -ge 2 ]] || die "用法: $0 add-block <DOMAIN>"
-      add_block "$2"
+      shift
+      [[ $# -ge 1 ]] || die "用法: $0 add-block <DOMAIN1> [DOMAIN2...]"
+      add_block "$@"
       ;;
     add-redirect|redirect)
       need_root
-      [[ $# -ge 3 ]] || die "用法: $0 add-redirect <DOMAIN> <TARGET_URL>"
-      add_redirect "$2" "$3"
+      shift
+      [[ $# -ge 2 ]] || die "用法: $0 add-redirect <DOMAIN1> [DOMAIN2...] <TARGET_URL>"
+      add_redirect "$@"
       ;;
     del|delete|remove)
       need_root
-      [[ $# -ge 2 ]] || die "用法: $0 del <DOMAIN>"
-      delete_domain "$2"
+      shift
+      [[ $# -ge 1 ]] || die "用法: $0 del <DOMAIN1> [DOMAIN2...]"
+      delete_domain "$@"
       ;;
     list)
       list_rules
