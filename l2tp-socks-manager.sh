@@ -109,7 +109,8 @@ save_profile() {
 next_id() {
     local id
     for id in $(seq 1 999); do
-        [[ -e $(profile_dir "$id") ]] || { printf '%s' "$id"; return; }
+        # Retry an incomplete installation using its existing ownership records.
+        [[ -f $(profile_dir "$id")/settings ]] || { printf '%s' "$id"; return; }
     done
     fail '最多支持 999 个配置。'
 }
@@ -453,12 +454,43 @@ PY
 
 ensure_account() {
     local name=$1 marker=$2
-    if id "$name" >/dev/null 2>&1; then
-        [[ -f $marker ]] || fail "系统账号 $name 已存在但不属于本脚本。"
+    if id -- "$name" >/dev/null 2>&1; then
+        [[ -f $marker ]] || { fail "系统账号 $name 已存在但不属于本脚本。"; return 1; }
+        [[ ! -s $marker || $(cat "$marker") == "$name" ]] || {
+            fail "账号 $name 的归属记录不一致，请检查 $marker。"
+            return 1
+        }
     else
-        useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin "$name"
-        : > "$marker"
+        useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin -- "$name" || {
+            fail "无法创建系统账号 $name。"
+            return 1
+        }
     fi
+    printf '%s\n' "$name" > "$marker"
+    chmod 600 "$marker"
+}
+
+remove_owned_accounts() {
+    local dir=$1 marker user
+    for marker in "$dir"/owner-*; do
+        [[ -f $marker ]] || continue
+        # Older versions created empty markers; the filename records the user.
+        user=${marker##*/owner-}
+        [[ $user =~ ^[A-Za-z0-9._-]{1,32}$ ]] || {
+            fail "账号归属文件名无效：$marker。"
+            return 1
+        }
+        [[ ! -s $marker || $(cat "$marker") == "$user" ]] || {
+            fail "账号归属记录不一致：$marker。"
+            return 1
+        }
+        if id -- "$user" >/dev/null 2>&1; then
+            userdel -- "$user" || {
+                fail "无法删除账号 $user；保留配置与归属记录，请处理占用后重试。"
+                return 1
+            }
+        fi
+    done
 }
 
 # Caller holds the policy lock. Keep UID marks even while PPP is down so the
@@ -788,8 +820,11 @@ save_configured_profile() {
     printf '%s:%s\n' "$SOCKS_USER" "$SOCKS_PASS" | chpasswd
     save_profile
     if [[ -n $old_user && $old_user != "$SOCKS_USER" && -f $P/owner-$old_user ]]; then
-        userdel "$old_user" 2>/dev/null || true
-        rm -f "$P/owner-$old_user"
+        if ! id -- "$old_user" >/dev/null 2>&1 || userdel -- "$old_user"; then
+            rm -f "$P/owner-$old_user"
+        else
+            say "提示：旧 SOCKS5 账号 $old_user 暂未删除，已保留归属记录供卸载时重试。" >&2
+        fi
     fi
     rm -f "$P/endpoint" "$P/iface"
     render_ss "$id"
@@ -1025,16 +1060,12 @@ configure_startup() {
 }
 
 remove_profile() {
-    local id=$1 marker user
+    local id=$1
     load_profile "$id"
     disconnect_profile "$id"
     systemctl disable --now "l2tp-socks-autoconnect@$id.service" "l2tp-socks-keepalive@$id.timer" >/dev/null 2>&1 || true
     policy_del "$id"
-    for marker in "$P"/owner-*; do
-        [[ -f $marker ]] || continue
-        user=$(cat "$marker")
-        [[ -n $user ]] && userdel "$user" 2>/dev/null || true
-    done
+    remove_owned_accounts "$P" || return 1
     rm -rf -- "$P"
     render_shared_ipsec
     render_firewall
@@ -1052,7 +1083,7 @@ delete_one() {
 }
 
 uninstall_all() {
-    local answer id self
+    local answer id self dir
     say '将删除全部出口、服务、代理账号、配置和管理脚本。'
     read -r -p '确认彻底卸载请输入 DELETE-ALL：' answer
     [[ $answer == DELETE-ALL ]] || { say '已取消。'; return; }
@@ -1064,7 +1095,16 @@ uninstall_all() {
         read -r -p '确认上述软件包一并卸载请输入 y：' answer
         [[ $answer == y || $answer == Y ]] || { say '已取消彻底卸载；未删除配置。'; return; }
     fi
-    while read -r id; do remove_profile "$id"; done < <(list_ids)
+    while read -r id; do remove_profile "$id" || return 1; done < <(list_ids)
+    # Interrupted installations may have ownership records but no settings yet.
+    for dir in "$PROFILES"/*; do
+        [[ -d $dir && ! -f $dir/settings ]] || continue
+        id=${dir##*/}
+        id_ok "$id" || continue
+        stop_profile_services "$id"
+        systemctl disable --now "l2tp-socks-autoconnect@$id.service" "l2tp-socks-keepalive@$id.timer" >/dev/null 2>&1 || true
+        remove_owned_accounts "$dir" || return 1
+    done
     systemctl disable --now l2tp-socks-policy.service l2tp-socks-firewall.service 2>/dev/null || true
     policy_clear
     nft list table inet "$NFT_TABLE" >/dev/null 2>&1 && nft delete table inet "$NFT_TABLE" || true
