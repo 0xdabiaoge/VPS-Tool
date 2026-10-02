@@ -32,3 +32,8 @@
 ```
 (curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/site-policy.sh -o /usr/local/bin/tj || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/site-policy.sh -o /usr/local/bin/tj) && chmod +x /usr/local/bin/tj && tj
 ```
+
+**l2tp出口部署：l2tp**
+```
+(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/l2tp-socks-manager.sh -o /usr/local/bin/l2tp || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/l2tp-socks-manager.sh -o /usr/local/bin/l2tp) && chmod +x /usr/local/bin/l2tp && l2tp
+```
