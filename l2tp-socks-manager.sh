@@ -899,10 +899,14 @@ connect_profile() {
     policy_add "$id"
     systemctl start xl2tpd.service
     if ! pgrep -x charon >/dev/null 2>&1; then
-        if systemctl list-unit-files | grep -q '^strongswan-starter.service'; then
+        # Query one unit directly; grep -q can cause SIGPIPE with pipefail.
+        if [[ $(systemctl show --property=LoadState --value strongswan-starter.service 2>/dev/null) == loaded ]]; then
             systemctl start strongswan-starter.service
-        else
+        elif [[ $(systemctl show --property=LoadState --value strongswan.service 2>/dev/null) == loaded ]]; then
             systemctl start strongswan.service
+        else
+            fail '未找到 strongSwan IPsec 服务；请确认 strongswan-starter 软件包已安装。'
+            return 1
         fi
     fi
     while read -r proposal; do
