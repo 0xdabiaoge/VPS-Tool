@@ -37,3 +37,8 @@
 ```
 (curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/l2tp-socks-manager.sh -o /usr/local/bin/l2tp || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/l2tp-socks-manager.sh -o /usr/local/bin/l2tp) && chmod +x /usr/local/bin/l2tp && l2tp
 ```
+
+**singbox-tun：sbtun**
+```
+(curl -LfsS https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/singbox_tun.sh -o /usr/local/bin/sbtun || wget -q https://raw.githubusercontent.com/0xdabiaoge/VPS-Tool/main/singbox_tun.sh -o /usr/local/bin/sbtun) && chmod +x /usr/local/bin/sbtun && sbtun
+```
