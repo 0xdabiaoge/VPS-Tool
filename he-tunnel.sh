@@ -5,7 +5,7 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 readonly SCRIPT_NAME="${0##*/}"
-readonly SCRIPT_VERSION="2.3.0"
+readonly SCRIPT_VERSION="2.4.0"
 readonly MARKER="Managed by he-tunnel.sh"
 readonly ROOT_PREFIX="${HE_TUNNEL_ROOT:-}"
 
@@ -49,6 +49,7 @@ ASSUME_YES=0
 ALL_TUNNELS=0
 NO_CURL=0
 SKIP_TESTS=0
+INSTALL_DEPS=0
 INTERACTIVE=0
 SELF_DESTRUCT=0
 RUN_STAMP=""
@@ -133,6 +134,7 @@ Install options:
   --backend TYPE          auto, systemd, ifupdown, or none (default: auto)
   --restrict-inbound      Add an nftables guard for HE ingress (systemd or none)
   --test-target ADDRESS   Public IPv6 ping target
+  --install-deps          Install missing utilities without prompting (apt-get, apk, dnf)
   --skip-tests            Skip gateway, MTU, and public IPv6 tests
   --no-curl               Skip public address lookup
 
@@ -172,6 +174,93 @@ need_discovery_commands() {
     need_command grep
     need_command head
     need_command sed
+}
+
+dependency_available() {
+    case "$1" in
+        ip) ip -V >/dev/null 2>&1 ;;
+        # The MTU check uses iputils ping's -M do option.
+        ping) [[ "$(ping -V 2>/dev/null)" == *iputils* ]] ;;
+        *) command -v "$1" >/dev/null 2>&1 ;;
+    esac
+}
+
+ensure_dependencies() {
+    local tool manager package IFS=' '
+    local -a missing=() packages=()
+    local -A seen_packages=()
+    for tool in "$@"; do
+        dependency_available "$tool" || missing+=("$tool")
+    done
+    (( ${#missing[@]} )) || return 0
+    warn "缺少兼容的依赖命令：${missing[*]}"
+    if (( DRY_RUN )) || [[ -n "$ROOT_PREFIX" ]]; then
+        warn "当前模式只检查依赖，请先补齐所列命令。"
+        return 1
+    fi
+    for manager in apt-get apk dnf; do
+        command -v "$manager" >/dev/null 2>&1 && break
+    done
+    if ! command -v "$manager" >/dev/null 2>&1; then
+        warn "未检测到 apt-get、apk 或 dnf，请通过系统包管理器安装所列命令。"
+        return 1
+    fi
+    for tool in "${missing[@]}"; do
+        case "$manager:$tool" in
+            apk:ip) package=iproute2-minimal ;;
+            dnf:ip) package=iproute ;;
+            *:ip) package=iproute2 ;;
+            dnf:ping) package=iputils ;;
+            *:ping) package=iputils-ping ;;
+            apk:flock) package=flock ;;
+            *:flock) package=util-linux ;;
+            *:awk) package=gawk ;;
+            *:find) package=findutils ;;
+            *:grep|*:sed|*:python3) package="$tool" ;;
+            *) package=coreutils ;;
+        esac
+        [[ -z "${seen_packages[$package]:-}" ]] || continue
+        seen_packages[$package]=1
+        packages+=("$package")
+    done
+    log "将通过 $manager 安装依赖：${packages[*]}"
+    if (( ! INSTALL_DEPS )); then
+        if [[ ! -t 0 ]]; then
+            warn "非交互部署可加 --install-deps，或先手动安装所列软件包。"
+            return 1
+        fi
+        confirm "现在安装这些依赖" || return 1
+    fi
+
+    if ! (
+        case "$manager" in
+            apt-get)
+                apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${packages[@]}"
+                ;;
+            apk) apk update && apk add "${packages[@]}" ;;
+            dnf) dnf -y install "${packages[@]}" ;;
+        esac
+    ); then
+        warn "依赖安装失败，请检查上方软件源、网络或包管理器错误。"
+        return 1
+    fi
+    hash -r
+    for tool in "${missing[@]}"; do
+        if ! dependency_available "$tool"; then
+            warn "安装后仍找不到兼容的 $tool，请检查 PATH 和已安装的软件包。"
+            return 1
+        fi
+    done
+    log "依赖检查通过。"
+}
+
+ensure_install_dependencies() {
+    local -a tools=(ip flock awk basename cat chmod chown find grep head install ln mktemp mv rm sed)
+    (( SKIP_TESTS )) || tools+=(ping)
+    if (( ${#HE_ROUTED_PREFIXES[@]} )) || [[ -n "$HE_ROUTED_ADDRESS" ]]; then
+        tools+=(python3)
+    fi
+    ensure_dependencies "${tools[@]}"
 }
 
 run() {
@@ -436,7 +525,6 @@ validate_install_arguments() {
     if [[ -n "$HE_CLIENT_IPV4" ]]; then
         is_ipv4 "$HE_CLIENT_IPV4" || die "HE Client IPv4 Address 无效：$HE_CLIENT_IPV4"
     fi
-    normalize_routed_ipv6
     if [[ -n "$LOCAL_IPV4" ]]; then
         is_ipv4 "$LOCAL_IPV4" || die "本地 IPv4 地址无效：$LOCAL_IPV4"
     fi
@@ -547,6 +635,7 @@ parse_arguments() {
             --all) ALL_TUNNELS=1; shift ;;
             --yes|-y) ASSUME_YES=1; shift ;;
             --dry-run) DRY_RUN=1; shift ;;
+            --install-deps) INSTALL_DEPS=1; shift ;;
             --skip-tests) SKIP_TESTS=1; shift ;;
             --restrict-inbound) RESTRICT_INBOUND=1; shift ;;
             --no-curl) NO_CURL=1; shift ;;
@@ -1015,16 +1104,6 @@ detect_ipv6_egress() {
 }
 
 preflight_install() {
-    need_command ip
-    need_command awk
-    need_command grep
-    need_command ping
-    need_command install
-    need_command mktemp
-    need_command mv
-    need_command rm
-    need_command flock
-    need_discovery_commands
     if [[ "$(sysctl -n net.ipv6.conf.all.disable_ipv6 2>/dev/null || printf '0')" == "1" ]]; then
         die "系统已通过 net.ipv6.conf.all.disable_ipv6 禁用 IPv6"
     fi
@@ -1047,11 +1126,6 @@ preflight_install() {
             GUARD_TABLE="he_$GUARD_TABLE"
         fi
     fi
-    # Runtime-only tunnels also need a removable record of their IPv6 rules.
-    need_command cat
-    need_command chmod
-    need_command chown
-    need_command ln
 }
 
 is_sit_interface_name() {
@@ -2086,11 +2160,13 @@ prompt_advanced_settings() {
 }
 
 prompt_routed_settings() {
-    local length answer
+    local length answer normalized index selected suggested
+    local -a candidates=()
+    HE_ROUTED_PREFIXES=()
+    HE_ROUTED_ADDRESS=""
     section "Routed IPv6 Prefixes（选填）"
     hint "从 HE 页面同名区域复制下发的网段。可填一个或同时填两个，直接回车跳过该项。"
     hint "粘贴完整 CIDR，也可以只填网段起始地址，向导会补上对应的前缀长度。"
-    hint "脚本为这些前缀配置经 HE 出网的源地址策略路由。实例地址仍需在面板或实例网络中分配。"
     for length in 64 48; do
         while true; do
             read -r -p "  Routed /$length [回车跳过]: " answer || return 1
@@ -2101,30 +2177,50 @@ prompt_routed_settings() {
                 input_error "请复制 HE 页面 Routed /$length 对应的 /$length 网段"
                 continue
             fi
-            if ! command -v python3 >/dev/null 2>&1; then
-                input_error "校验 Routed 前缀需要 python3。可回车跳过此项，或安装 python3 后重新运行向导"
+            if ! ensure_dependencies python3; then
+                hint "补齐 python3 后可重填前缀，也可回车跳过此项。"
                 continue
             fi
-            if canonical_routed_ipv6 "" "$answer" >/dev/null 2>&1; then
-                HE_ROUTED_PREFIXES+=("$answer")
+            if normalized="$(canonical_routed_ipv6 "" "$answer" 2>/dev/null)"; then
+                candidates+=("${normalized#- }")
                 break
             fi
             input_error "请填写 HE 分配的网段起始地址，并确认它与隧道端点分开"
         done
     done
 
-    (( ${#HE_ROUTED_PREFIXES[@]} )) || return 0
-    hint "如需宿主机使用业务 IPv6，从上面填写的任一前缀中选一个未占用的地址。"
-    hint "例如前缀为 2001:db8:1234::/48 时可选 2001:db8:1234::1。脚本会按 /128 绑定并用它测试公网。"
+    (( ${#candidates[@]} )) || return 0
+    section "选择宿主机使用的 Routed 前缀"
+    for index in "${!candidates[@]}"; do
+        printf '  %d) 使用 %s\n' "$((index + 1))" "${candidates[$index]}"
+    done
+    printf '  0) 只建立 HE 隧道\n'
+    hint "脚本只为所选前缀配置策略路由，并从中绑定一个宿主机业务 IPv6。"
     while true; do
-        read -r -p "  本机业务 IPv6 [回车只配置路由]: " answer || return 1
+        read -r -p "请选择: " answer || return 1
         answer="$(trim_value "$answer")"
-        [[ -n "$answer" ]] || return 0
-        if canonical_routed_ipv6 "$answer" "${HE_ROUTED_PREFIXES[@]}" >/dev/null 2>&1; then
-            HE_ROUTED_ADDRESS="${answer%/128}"
+        case "$answer" in
+            0) return 0 ;;
+            1|2)
+                selected="${candidates[$((answer - 1))]:-}"
+                [[ -z "$selected" ]] || break
+                ;;
+        esac
+        input_error "请选择上面列出的编号"
+    done
+
+    # Canonical /64 and /48 network addresses end in ::.
+    suggested="${selected%/*}1"
+    hint "回车使用建议的地址，也可以填写所选前缀内的其他未占用地址。脚本按 /128 绑定，并用该地址测试公网。"
+    while true; do
+        read -r -p "  本机业务 IPv6 [$suggested]: " answer || return 1
+        answer="$(trim_value "$answer")"
+        if normalized="$(canonical_routed_ipv6 "${answer:-$suggested}" "$selected" 2>/dev/null)"; then
+            HE_ROUTED_PREFIXES=("$selected")
+            HE_ROUTED_ADDRESS="${normalized%% *}"
             return 0
         fi
-        input_error "请输入已填写的 Routed 前缀内的单个 IPv6 地址，可带 /128"
+        input_error "请输入 $selected 内的单个地址，例如 $suggested，可带 /128"
     done
 }
 
@@ -2210,19 +2306,18 @@ interactive_menu() {
     printf '\n%b================================================%b\n' "$COLOR_CYAN" "$COLOR_RESET"
     printf '%b  Hurricane Electric HE/SIT IPv6 隧道管理工具%b\n' "$COLOR_CYAN" "$COLOR_RESET"
     printf '%b================================================%b\n' "$COLOR_CYAN" "$COLOR_RESET"
-    cat <<'EOF'
-  1) 全新部署 HE 隧道（参数向导）
+    printf '%s\n' '  1) 全新部署 HE 隧道（参数向导）
   2) 扫描本机已安装的 HE/SIT 隧道
   3) 查看隧道状态和配置来源
   4) 彻底卸载指定或全部隧道
   5) 预演彻底卸载（只展示，不修改）
   6) 自毁卸载（删除全部隧道、备份和脚本本身）
-  0) 退出
-EOF
+  0) 退出'
     read -r -p "请选择 [1]: " choice
     case "${choice:-1}" in
         1)
             ACTION="install"
+            ensure_install_dependencies || exit 1
             prompt_install_parameters
             show_install_summary
             hint "请重点核对：Server IPv6 是 HE 网关地址，Client IPv6 是本机地址，两者不能相同。"
@@ -2262,6 +2357,10 @@ main() {
     case "$ACTION" in
         install)
             validate_install_arguments
+            if (( ! INTERACTIVE )); then
+                ensure_install_dependencies || exit 1
+            fi
+            normalize_routed_ipv6
             preflight_install
             install_fresh_tunnel
             ;;
