@@ -5,7 +5,7 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 readonly SCRIPT_NAME="${0##*/}"
-readonly SCRIPT_VERSION="2.2.0"
+readonly SCRIPT_VERSION="2.3.0"
 readonly MARKER="Managed by he-tunnel.sh"
 readonly ROOT_PREFIX="${HE_TUNNEL_ROOT:-}"
 
@@ -29,8 +29,8 @@ TUNNEL_NAME="he-ipv6"
 NAME_EXPLICIT=0
 HE_SERVER_IPV4=""
 HE_SERVER_IPV6=""
+HE_CLIENT_IPV4=""
 HE_CLIENT_IPV6=""
-HE_ROUTED_PREFIX=""
 HE_ROUTED_ADDRESS=""
 RESTRICT_INBOUND=0
 GUARD_TABLE=""
@@ -59,6 +59,7 @@ TOUCHED_NETWORKMANAGER=0
 PERSISTENCE_START_ATTEMPTED=0
 TEMP_TUNNEL_ACTIVE=0
 
+declare -a HE_ROUTED_PREFIXES=()
 declare -a DISCOVERED_NAMES=()
 declare -a ARTIFACT_NAMES=()
 declare -a ARTIFACT_KINDS=()
@@ -120,9 +121,10 @@ Install options:
   --name NAME             Interface name (default: he-ipv6)
   --server-ipv4 ADDRESS   HE Server IPv4 Address; required for install
   --server-ipv6 ADDRESS   HE Server IPv6 Address; required for install
+  --client-ipv4 ADDRESS   Optional HE public Client IPv4 Address for comparison
   --client-ipv6 ADDR[/N]  HE Client IPv6 Address; omitted prefix defaults to /64
-  --routed-prefix CIDR    Route this HE prefix by source, e.g. a routed /48
-  --routed-address ADDR   Bind one address from that prefix to the host as /128
+  --routed-prefix CIDR    Optional HE source prefix; repeat to use both /64 and /48
+  --routed-address ADDR   Bind one host IPv6 as /128; must match a prefix if supplied
   --local-ipv4 ADDRESS    NIC IPv4 behind any EIP/NAT; auto-detected by default
   --out-interface NAME    IPv4 egress interface; auto-detected by default
   --mtu NUMBER            Tunnel MTU (default: 1480; range: 1280-1480)
@@ -152,6 +154,7 @@ Notes:
   * Install never takes over an existing interface or configuration.
   * Gateway, MTU, and public IPv6 tests must pass unless skipped.
   * Existing IPv6 egress is preserved; HE addresses use source policy routing.
+  * Optional routed prefixes and addresses require python3.
   * Uninstall discovers configurations not created by this script, backs up
     persistent files under /var/backups/he-tunnel.sh, and then removes them.
   * Cloud security groups are untouched. Firewall changes require --restrict-inbound.
@@ -275,23 +278,26 @@ derive_he_server_ipv6() {
     fi
 }
 
-prompt_ipv4_required() {
-    local answer
+prompt_he_ipv4() {
+    local field="$1" optional="${2:-0}" answer prompt="$1"
+    if (( optional )); then
+        prompt+=" [回车跳过]"
+    fi
     while true; do
-        read -r -p "  HE Server IPv4 Address: " answer
+        read -r -p "  $prompt: " answer || return 1
         answer="$(trim_value "$answer")"
-        if is_ipv4 "$answer"; then
+        if { (( optional )) && [[ -z "$answer" ]]; } || is_ipv4 "$answer"; then
             printf '%s' "$answer"
             return 0
         fi
-        input_error "请输入 HE 页面中的 Server IPv4 Address，例如 216.218.221.6"
+        input_error "请填写 HE 页面中的 $field，格式为 IPv4 裸地址"
     done
 }
 
 prompt_client_ipv6() {
     local answer normalized
     while true; do
-        read -r -p "  HE Client IPv6 Address: " answer
+        read -r -p "  HE Client IPv6 Address: " answer || return 1
         answer="$(trim_value "$answer")"
         if normalized="$(normalize_client_ipv6 "$answer")"; then
             if [[ "$answer" != */* ]]; then
@@ -312,7 +318,7 @@ prompt_server_ipv6() {
         else
             prompt="  HE Server IPv6 Address: "
         fi
-        read -r -p "$prompt" answer
+        read -r -p "$prompt" answer || return 1
         answer="$(trim_value "${answer:-$suggested}")"
         if ! normalized="$(normalize_server_ipv6 "$answer")"; then
             input_error "请输入 HE 页面中的 Server IPv6 Address，通常以 ::1 结尾"
@@ -346,50 +352,57 @@ is_uint() {
 is_ipv4() {
     local address="$1" octet
     local -a octets
+    [[ "$address" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || return 1
     IFS='.' read -r -a octets <<<"$address"
-    (( ${#octets[@]} == 4 )) || return 1
     for octet in "${octets[@]}"; do
-        [[ "$octet" =~ ^[0-9]+$ ]] || return 1
-        (( 10#$octet >= 0 && 10#$octet <= 255 )) || return 1
+        (( 10#$octet <= 255 )) || return 1
     done
 }
 
-normalize_routed_ipv6() {
-    [[ -n "$HE_ROUTED_PREFIX" || -n "$HE_ROUTED_ADDRESS" ]] || return 0
-    need_command python3
-    local normalized
-    if ! normalized="$(python3 - "$HE_ROUTED_PREFIX" "$HE_ROUTED_ADDRESS" \
-        "$HE_SERVER_IPV6" "${HE_CLIENT_IPV6%/*}" <<'PY'
+canonical_routed_ipv6() {
+    python3 - "$HE_SERVER_IPV6" "${HE_CLIENT_IPV6%/*}" "$@" <<'PY'
 from ipaddress import IPv6Address, IPv6Network
 import sys
 
-prefix, address, gateway, client = sys.argv[1:]
+gateway, client, address, *prefixes = sys.argv[1:]
 try:
-    if prefix:
+    endpoints = (IPv6Address(gateway), IPv6Address(client))
+    networks = {}
+    for prefix in prefixes:
         if "/" not in prefix or "%" in prefix:
             raise ValueError("the routed prefix requires an explicit CIDR")
         network = IPv6Network(prefix)
-        if IPv6Address(gateway) in network or IPv6Address(client) in network:
+        if any(endpoint in network for endpoint in endpoints):
             raise ValueError("the routed prefix overlaps the tunnel endpoints")
+        networks[network] = None
     if address:
         if "%" in address:
             raise ValueError("the routed address cannot contain a scope ID")
         host = IPv6Address(address[:-4] if address.endswith("/128") else address)
-        if host in (IPv6Address(gateway), IPv6Address(client)):
+        if host in endpoints:
             raise ValueError("the routed address overlaps a tunnel endpoint")
-        if prefix and host not in network:
-            raise ValueError("the routed address is outside the routed prefix")
+        if networks and not any(host in network for network in networks):
+            raise ValueError("the routed address is outside the supplied routed prefixes")
         address = str(host)
-        if not prefix:
-            network = IPv6Network(f"{host}/128")
-    print(f"{network} {address}")
+        if not networks:
+            networks[IPv6Network(f"{host}/128")] = None
+    print(address or "-", *networks)
 except ValueError as error:
     sys.exit(str(error))
 PY
-    )"; then
+}
+
+normalize_routed_ipv6() {
+    (( ${#HE_ROUTED_PREFIXES[@]} )) || [[ -n "$HE_ROUTED_ADDRESS" ]] || return 0
+    need_command python3
+    local normalized
+    local -a values
+    if ! normalized="$(canonical_routed_ipv6 "$HE_ROUTED_ADDRESS" "${HE_ROUTED_PREFIXES[@]}")"; then
         die "请检查 HE Routed Prefix 或本机业务地址"
     fi
-    IFS=' ' read -r HE_ROUTED_PREFIX HE_ROUTED_ADDRESS <<< "$normalized"
+    IFS=' ' read -r -a values <<< "$normalized"
+    HE_ROUTED_ADDRESS="${values[0]#-}"
+    HE_ROUTED_PREFIXES=("${values[@]:1}")
 }
 
 validate_name() {
@@ -419,6 +432,10 @@ validate_install_arguments() {
     HE_CLIENT_IPV6="$normalized"
     [[ "$HE_SERVER_IPV6" != "${HE_CLIENT_IPV6%/*}" ]] || \
         die "Server IPv6 与 Client IPv6 不能相同；HE 服务端通常是 ::1，本机通常是 ::2"
+    HE_CLIENT_IPV4="$(trim_value "$HE_CLIENT_IPV4")"
+    if [[ -n "$HE_CLIENT_IPV4" ]]; then
+        is_ipv4 "$HE_CLIENT_IPV4" || die "HE Client IPv4 Address 无效：$HE_CLIENT_IPV4"
+    fi
     normalize_routed_ipv6
     if [[ -n "$LOCAL_IPV4" ]]; then
         is_ipv4 "$LOCAL_IPV4" || die "本地 IPv4 地址无效：$LOCAL_IPV4"
@@ -475,9 +492,16 @@ parse_arguments() {
                 HE_CLIENT_IPV6="$2"
                 shift 2
                 ;;
+            --client-ipv4)
+                (( $# >= 2 )) || die "--client-ipv4 requires a value"
+                HE_CLIENT_IPV4="$2"
+                shift 2
+                ;;
             --routed-prefix)
                 (( $# >= 2 )) || die "--routed-prefix requires a value"
-                HE_ROUTED_PREFIX="$2"
+                if [[ -n "$2" ]]; then
+                    HE_ROUTED_PREFIXES+=("$2")
+                fi
                 shift 2
                 ;;
             --routed-address)
@@ -1083,8 +1107,7 @@ remove_tunnel_guard() {
 
 remove_ipv6_rules() {
     local source
-    for source in "${HE_CLIENT_IPV6%/*}/128" "$HE_ROUTED_PREFIX"; do
-        [[ -n "$source" ]] || continue
+    for source in "${HE_CLIENT_IPV6%/*}/128" "${HE_ROUTED_PREFIXES[@]}"; do
         run ip -6 rule del pref "$ROUTE_TABLE" from "$source" lookup "$ROUTE_TABLE" protocol kernel 2>/dev/null || true
     done
     run ip -6 rule del pref "$FALLBACK_PRIORITY" from all lookup "$ROUTE_TABLE" protocol kernel 2>/dev/null || true
@@ -1097,8 +1120,7 @@ add_tunnel_routes() {
         table "$ROUTE_TABLE" proto kernel || return 1
     run ip -6 route add default via "$HE_SERVER_IPV6" dev "$TUNNEL_NAME" src "$client" \
         metric "$ROUTE_METRIC" table "$ROUTE_TABLE" onlink proto kernel || return 1
-    for source in "$client/128" "$HE_ROUTED_PREFIX"; do
-        [[ -n "$source" ]] || continue
+    for source in "$client/128" "${HE_ROUTED_PREFIXES[@]}"; do
         run ip -6 rule add pref "$ROUTE_TABLE" from "$source" lookup "$ROUTE_TABLE" protocol kernel || return 1
     done
     if (( fallback )); then
@@ -1189,9 +1211,16 @@ show_public_addresses() {
         warn "未安装 curl，跳过公网地址查询"
         return 0
     }
-    public_v4="$(curl -4 --connect-timeout 5 --max-time 12 -fsS https://api.ipify.org 2>/dev/null || true)"
+    public_v4="$(curl -4 --noproxy '*' --interface "$LOCAL_IPV4" --connect-timeout 5 --max-time 12 -fsS https://api.ipify.org 2>/dev/null || true)"
     public_v6="$(curl -6 --noproxy '*' --interface "$source" --connect-timeout 5 --max-time 12 -fsS https://api64.ipify.org 2>/dev/null || true)"
-    [[ -n "$public_v4" ]] && log "公网 IPv4：$public_v4"
+    if [[ -n "$public_v4" ]]; then
+        log "公网 IPv4：$public_v4"
+        if [[ -n "$HE_CLIENT_IPV4" && "$HE_CLIENT_IPV4" != "$public_v4" ]]; then
+            warn "HTTPS 查询到的公网 IPv4 ($public_v4) 与 HE Client IPv4 ($HE_CLIENT_IPV4) 不同，请核对 HE 的公网端点。"
+        fi
+    elif [[ -n "$HE_CLIENT_IPV4" ]]; then
+        warn "公网 IPv4 查询失败，请通过服务商面板核对 HE Client IPv4。"
+    fi
     if [[ -n "$public_v6" ]]; then
         log "公网 IPv6：$public_v6"
     else
@@ -1224,6 +1253,7 @@ run_tunnel_tests() {
     log "测试 HE IPv6 网关：$HE_SERVER_IPV6"
     if ! ping -6 -I "$client" -c 3 -W 2 "$HE_SERVER_IPV6"; then
         warn "HE IPv6 网关无响应"
+        warn "请核对 HE Client IPv4 Address 是否是本机用于该隧道的公网 IPv4。"
         warn "请确认云安全组和主机防火墙双向放行 IPv4 Protocol 41；它不是 TCP/UDP 41 端口"
         warn "抓包诊断：tcpdump -ni $OUT_INTERFACE 'ip proto 41 and host $HE_SERVER_IPV4'"
         return 1
@@ -1264,7 +1294,7 @@ write_fresh_config() {
 }
 
 write_metadata() {
-    local target
+    local target IFS=,
     target="$(root_path /etc/he-tunnel)/$TUNNEL_NAME.conf"
     if (( DRY_RUN )); then
         log "Would write metadata to $target"
@@ -1275,8 +1305,10 @@ write_metadata() {
 NAME=$TUNNEL_NAME
 SERVER_IPV4=$HE_SERVER_IPV4
 SERVER_IPV6=$HE_SERVER_IPV6
+CLIENT_IPV4=$HE_CLIENT_IPV4
 CLIENT_IPV6=$HE_CLIENT_IPV6
-ROUTED_PREFIX=$HE_ROUTED_PREFIX
+ROUTED_PREFIX=${HE_ROUTED_PREFIXES[0]:-}
+ROUTED_PREFIXES=${HE_ROUTED_PREFIXES[*]}
 ROUTED_ADDRESS=$HE_ROUTED_ADDRESS
 LOCAL_IPV4=$LOCAL_IPV4
 OUT_INTERFACE=$OUT_INTERFACE
@@ -1306,10 +1338,11 @@ write_routing_helper() {
         printf '%s\n' '#!/usr/bin/env bash' "# $MARKER" 'set -Eeuo pipefail' \
             'DRY_RUN=0 COLOR_RESET="" COLOR_GREEN="" COLOR_YELLOW=""'
         for key in TUNNEL_NAME HE_SERVER_IPV4 HE_SERVER_IPV6 HE_CLIENT_IPV6 \
-            HE_ROUTED_PREFIX HE_ROUTED_ADDRESS LOCAL_IPV4 OUT_INTERFACE MTU TTL \
+            HE_ROUTED_ADDRESS LOCAL_IPV4 OUT_INTERFACE MTU TTL \
             ROUTE_METRIC ROUTE_TABLE FALLBACK_PRIORITY ROUTE_LOCK GUARD_TABLE; do
             printf '%s=%q\n' "$key" "${!key}"
         done
+        declare -p HE_ROUTED_PREFIXES
         # Use the same network actions for the trial and for service startups.
         declare -f log warn run try_run ipv6_routing_inventory detect_ipv6_egress \
             is_sit_interface_name delete_live_interface create_tunnel_guard remove_tunnel_guard \
@@ -2052,29 +2085,80 @@ prompt_advanced_settings() {
     prompt_backend_choice
 }
 
+prompt_routed_settings() {
+    local length answer
+    section "Routed IPv6 Prefixes（选填）"
+    hint "从 HE 页面同名区域复制下发的网段。可填一个或同时填两个，直接回车跳过该项。"
+    hint "粘贴完整 CIDR，也可以只填网段起始地址，向导会补上对应的前缀长度。"
+    hint "脚本为这些前缀配置经 HE 出网的源地址策略路由。实例地址仍需在面板或实例网络中分配。"
+    for length in 64 48; do
+        while true; do
+            read -r -p "  Routed /$length [回车跳过]: " answer || return 1
+            answer="$(trim_value "$answer")"
+            [[ -n "$answer" ]] || break
+            [[ "$answer" == */* ]] || answer+="/$length"
+            if [[ "${answer##*/}" != "$length" ]]; then
+                input_error "请复制 HE 页面 Routed /$length 对应的 /$length 网段"
+                continue
+            fi
+            if ! command -v python3 >/dev/null 2>&1; then
+                input_error "校验 Routed 前缀需要 python3。可回车跳过此项，或安装 python3 后重新运行向导"
+                continue
+            fi
+            if canonical_routed_ipv6 "" "$answer" >/dev/null 2>&1; then
+                HE_ROUTED_PREFIXES+=("$answer")
+                break
+            fi
+            input_error "请填写 HE 分配的网段起始地址，并确认它与隧道端点分开"
+        done
+    done
+
+    (( ${#HE_ROUTED_PREFIXES[@]} )) || return 0
+    hint "如需宿主机使用业务 IPv6，从上面填写的任一前缀中选一个未占用的地址。"
+    hint "例如前缀为 2001:db8:1234::/48 时可选 2001:db8:1234::1。脚本会按 /128 绑定并用它测试公网。"
+    while true; do
+        read -r -p "  本机业务 IPv6 [回车只配置路由]: " answer || return 1
+        answer="$(trim_value "$answer")"
+        [[ -n "$answer" ]] || return 0
+        if canonical_routed_ipv6 "$answer" "${HE_ROUTED_PREFIXES[@]}" >/dev/null 2>&1; then
+            HE_ROUTED_ADDRESS="${answer%/128}"
+            return 0
+        fi
+        input_error "请输入已填写的 Routed 前缀内的单个 IPv6 地址，可带 /128"
+    done
+}
+
 prompt_install_parameters() {
     local suggested_server answer
 
     section "HE 参数向导"
-    hint "请打开 HE Tunnel Details 页面，只需复制下面 3 个字段。"
-    hint "不要复制示例配置中的 local 公网地址；脚本会自动识别 EIP/NAT 后的真实本地地址。"
+    hint "请打开 HE Tunnel Details 的 IPv6 Tunnel 标签页，先核对 IPv6 Tunnel Endpoints。"
+    hint "Tunnel ID 用于辨识隧道。DNS Resolvers 和 rDNS Delegations 可独立配置。"
+    hint "建立 HE 隧道需要云安全组和主机防火墙允许 IPv4 Protocol 41 双向通过。"
 
-    section "[1/3] Server IPv4 Address"
-    hint "复制 HE 页面中的 Server IPv4 Address，例如 216.218.221.6。"
-    HE_SERVER_IPV4="$(prompt_ipv4_required)"
+    section "[1/4] Server IPv4 Address（必填）"
+    hint "复制 HE 服务端的 IPv4 地址，例如 216.218.221.6。"
+    HE_SERVER_IPV4="$(prompt_he_ipv4 "Server IPv4 Address")"
 
-    section "[2/3] Client IPv6 Address"
+    section "[2/4] Client IPv6 Address（必填）"
     hint "复制 HE 页面中的 Client IPv6 Address，通常以 ::2 结尾。"
     hint "可以直接粘贴裸地址；未填写前缀时会自动补为 /64。"
     HE_CLIENT_IPV6="$(prompt_client_ipv6)"
 
     suggested_server="$(derive_he_server_ipv6 "$HE_CLIENT_IPV6")"
-    section "[3/3] Server IPv6 Address"
+    section "[3/4] Server IPv6 Address（必填）"
     hint "复制 HE 页面中的 Server IPv6 Address，通常以 ::1 结尾。"
     if [[ -n "$suggested_server" ]]; then
-        hint "已根据 Client IPv6 推算出常见值；直接回车即可采用。"
+        hint "已根据 Client IPv6 推算出常见值，和页面一致时可直接回车采用。"
     fi
     HE_SERVER_IPV6="$(prompt_server_ipv6 "$HE_CLIENT_IPV6" "$suggested_server")"
+
+    section "[4/4] Client IPv4 Address（选填）"
+    hint "这是 HE 面板记录的本机公网 IPv4，填写后可与公网查询结果比对。"
+    hint "隧道实际绑定网卡上的本地 IPv4，使用 EIP/NAT 时通常是内网地址，由脚本自动识别。"
+    HE_CLIENT_IPV4="$(prompt_he_ipv4 "Client IPv4 Address" 1)"
+
+    prompt_routed_settings
 
     printf '\n'
     read -r -p "是否修改网卡、MTU、TTL 或持久化方式等高级设置？ [y/N]: " answer
@@ -2086,11 +2170,24 @@ prompt_install_parameters() {
 }
 
 show_install_summary() {
+    local prefix routed_host="未绑定（仅配置路由）"
     section "部署前检查"
     printf '  %-30s %b%s%b\n' "Server IPv4 Address" "$COLOR_GREEN" "$HE_SERVER_IPV4" "$COLOR_RESET"
     printf '  %-30s %b%s%b\n' "Server IPv6 Address" "$COLOR_GREEN" "$HE_SERVER_IPV6" "$COLOR_RESET"
     printf '  %-30s %b%s%b\n' "Client IPv6 Address" "$COLOR_GREEN" "${HE_CLIENT_IPV6%/*}" "$COLOR_RESET"
     printf '  %-30s /%s\n' "Client IPv6 Prefix" "${HE_CLIENT_IPV6#*/}"
+    printf '  %-30s %s\n' "Client IPv4 Address" "${HE_CLIENT_IPV4:-未填写}"
+    if (( ${#HE_ROUTED_PREFIXES[@]} )); then
+        for prefix in "${HE_ROUTED_PREFIXES[@]}"; do
+            printf '  %-30s %s\n' "Routed /${prefix##*/}" "$prefix"
+        done
+        if [[ -n "$HE_ROUTED_ADDRESS" ]]; then
+            routed_host="$HE_ROUTED_ADDRESS/128"
+        fi
+        printf '  %-30s %s\n' "本机业务 IPv6" "$routed_host"
+    else
+        printf '  %-30s %s\n' "Routed IPv6 Prefixes" "未填写"
+    fi
     printf '\n'
     printf '  %-30s %s\n' "隧道接口" "$TUNNEL_NAME"
     printf '  %-30s %s\n' "本地 IPv4" "${LOCAL_IPV4:-自动识别}"
