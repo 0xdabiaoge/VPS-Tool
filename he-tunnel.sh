@@ -5,7 +5,7 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 readonly SCRIPT_NAME="${0##*/}"
-readonly SCRIPT_VERSION="2.1.2"
+readonly SCRIPT_VERSION="2.2.0"
 readonly MARKER="Managed by he-tunnel.sh"
 readonly ROOT_PREFIX="${HE_TUNNEL_ROOT:-}"
 
@@ -30,6 +30,13 @@ NAME_EXPLICIT=0
 HE_SERVER_IPV4=""
 HE_SERVER_IPV6=""
 HE_CLIENT_IPV6=""
+HE_ROUTED_PREFIX=""
+HE_ROUTED_ADDRESS=""
+RESTRICT_INBOUND=0
+GUARD_TABLE=""
+ROUTE_TABLE=""
+FALLBACK_PRIORITY=""
+ROUTE_LOCK=""
 LOCAL_IPV4=""
 OUT_INTERFACE=""
 MTU="1480"
@@ -49,6 +56,8 @@ TOUCHED_SYSTEMD=0
 TOUCHED_NETWORKD=0
 TOUCHED_NETPLAN=0
 TOUCHED_NETWORKMANAGER=0
+PERSISTENCE_START_ATTEMPTED=0
+TEMP_TUNNEL_ACTIVE=0
 
 declare -a DISCOVERED_NAMES=()
 declare -a ARTIFACT_NAMES=()
@@ -56,6 +65,7 @@ declare -a ARTIFACT_KINDS=()
 declare -a ARTIFACT_TARGETS=()
 declare -a ARTIFACT_DETAILS=()
 declare -a BACKED_UP_FILES=()
+declare -a FRESH_CONFIG_FILES=()
 
 log() {
     printf '%b[信息]%b %s\n' "$COLOR_GREEN" "$COLOR_RESET" "$*"
@@ -111,12 +121,15 @@ Install options:
   --server-ipv4 ADDRESS   HE Server IPv4 Address; required for install
   --server-ipv6 ADDRESS   HE Server IPv6 Address; required for install
   --client-ipv6 ADDR[/N]  HE Client IPv6 Address; omitted prefix defaults to /64
+  --routed-prefix CIDR    Route this HE prefix by source, e.g. a routed /48
+  --routed-address ADDR   Bind one address from that prefix to the host as /128
   --local-ipv4 ADDRESS    NIC IPv4 behind any EIP/NAT; auto-detected by default
   --out-interface NAME    IPv4 egress interface; auto-detected by default
   --mtu NUMBER            Tunnel MTU (default: 1480; range: 1280-1480)
   --ttl NUMBER            Outer IPv4 TTL (default: 255)
-  --metric NUMBER         IPv6 default-route metric (default: 1024)
+  --metric NUMBER         HE route metric (default: 1024)
   --backend TYPE          auto, systemd, ifupdown, or none (default: auto)
+  --restrict-inbound      Add an nftables guard for HE ingress (systemd or none)
   --test-target ADDRESS   Public IPv6 ping target
   --skip-tests            Skip gateway, MTU, and public IPv6 tests
   --no-curl               Skip public address lookup
@@ -137,9 +150,11 @@ Examples:
 Notes:
   * HE uses IPv4 protocol 41, not TCP/UDP port 41.
   * Install never takes over an existing interface or configuration.
+  * Gateway, MTU, and public IPv6 tests must pass unless skipped.
+  * Existing IPv6 egress is preserved; HE addresses use source policy routing.
   * Uninstall discovers configurations not created by this script, backs up
     persistent files under /var/backups/he-tunnel.sh, and then removes them.
-  * Cloud security groups and host firewall rules are not modified.
+  * Cloud security groups are untouched. Firewall changes require --restrict-inbound.
 EOF
 }
 
@@ -339,6 +354,44 @@ is_ipv4() {
     done
 }
 
+normalize_routed_ipv6() {
+    [[ -n "$HE_ROUTED_PREFIX" || -n "$HE_ROUTED_ADDRESS" ]] || return 0
+    need_command python3
+    local normalized
+    if ! normalized="$(python3 - "$HE_ROUTED_PREFIX" "$HE_ROUTED_ADDRESS" \
+        "$HE_SERVER_IPV6" "${HE_CLIENT_IPV6%/*}" <<'PY'
+from ipaddress import IPv6Address, IPv6Network
+import sys
+
+prefix, address, gateway, client = sys.argv[1:]
+try:
+    if prefix:
+        if "/" not in prefix or "%" in prefix:
+            raise ValueError("the routed prefix requires an explicit CIDR")
+        network = IPv6Network(prefix)
+        if IPv6Address(gateway) in network or IPv6Address(client) in network:
+            raise ValueError("the routed prefix overlaps the tunnel endpoints")
+    if address:
+        if "%" in address:
+            raise ValueError("the routed address cannot contain a scope ID")
+        host = IPv6Address(address[:-4] if address.endswith("/128") else address)
+        if host in (IPv6Address(gateway), IPv6Address(client)):
+            raise ValueError("the routed address overlaps a tunnel endpoint")
+        if prefix and host not in network:
+            raise ValueError("the routed address is outside the routed prefix")
+        address = str(host)
+        if not prefix:
+            network = IPv6Network(f"{host}/128")
+    print(f"{network} {address}")
+except ValueError as error:
+    sys.exit(str(error))
+PY
+    )"; then
+        die "请检查 HE Routed Prefix 或本机业务地址"
+    fi
+    IFS=' ' read -r HE_ROUTED_PREFIX HE_ROUTED_ADDRESS <<< "$normalized"
+}
+
 validate_name() {
     [[ "$TUNNEL_NAME" =~ ^[a-zA-Z0-9_.-]+$ ]] || die "隧道名称包含无效字符：$TUNNEL_NAME"
     (( ${#TUNNEL_NAME} <= 15 )) || die "Linux 接口名称不能超过 15 个字符"
@@ -366,6 +419,7 @@ validate_install_arguments() {
     HE_CLIENT_IPV6="$normalized"
     [[ "$HE_SERVER_IPV6" != "${HE_CLIENT_IPV6%/*}" ]] || \
         die "Server IPv6 与 Client IPv6 不能相同；HE 服务端通常是 ::1，本机通常是 ::2"
+    normalize_routed_ipv6
     if [[ -n "$LOCAL_IPV4" ]]; then
         is_ipv4 "$LOCAL_IPV4" || die "本地 IPv4 地址无效：$LOCAL_IPV4"
     fi
@@ -421,6 +475,16 @@ parse_arguments() {
                 HE_CLIENT_IPV6="$2"
                 shift 2
                 ;;
+            --routed-prefix)
+                (( $# >= 2 )) || die "--routed-prefix requires a value"
+                HE_ROUTED_PREFIX="$2"
+                shift 2
+                ;;
+            --routed-address)
+                (( $# >= 2 )) || die "--routed-address requires a value"
+                HE_ROUTED_ADDRESS="$2"
+                shift 2
+                ;;
             --local-ipv4)
                 (( $# >= 2 )) || die "--local-ipv4 requires a value"
                 LOCAL_IPV4="$2"
@@ -460,6 +524,7 @@ parse_arguments() {
             --yes|-y) ASSUME_YES=1; shift ;;
             --dry-run) DRY_RUN=1; shift ;;
             --skip-tests) SKIP_TESTS=1; shift ;;
+            --restrict-inbound) RESTRICT_INBOUND=1; shift ;;
             --no-curl) NO_CURL=1; shift ;;
             --menu) ACTION="menu"; shift ;;
             -h|--help) usage; exit 0 ;;
@@ -604,10 +669,15 @@ discover_ifupdown() {
 }
 
 discover_systemd_units() {
-    local unit_dir file name
+    local unit_dir file name unit
     unit_dir="$(root_path /etc/systemd/system)"
     [[ -d "$unit_dir" ]] || return 0
     while IFS= read -r -d '' file; do
+        unit="${file##*/}"
+        if [[ "$unit" =~ ^he-tunnel-([a-zA-Z0-9_.-]{1,15})\.service$ ]] &&
+           grep -Fxq "# $MARKER" "$file"; then
+            add_artifact "${BASH_REMATCH[1]}" "systemd-unit" "$file" "$unit"
+        fi
         while IFS= read -r name; do
             [[ -n "$name" ]] && add_artifact "$name" "systemd-unit" "$file" "$(basename "$file")"
         done < <(
@@ -727,6 +797,20 @@ discover_managed_metadata() {
     done < <(find "$config_dir" -maxdepth 1 -type f -name '*.conf' -print0 2>/dev/null || true)
 }
 
+discover_routing_helpers() {
+    local directory file name
+    for directory in "$(root_path /etc/he-tunnel)" "$(root_path /run/he-tunnel)"; do
+        [[ -d "$directory" ]] || continue
+        while IFS= read -r -d '' file; do
+            name="${file##*/}"
+            if [[ "$name" =~ ^[a-zA-Z0-9_.-]{1,15}\.runtime$ ]] &&
+               grep -Fxq "# $MARKER" "$file"; then
+                add_artifact "${name%.runtime}" "he-runtime" "$file"
+            fi
+        done < <(find "$directory" -maxdepth 1 -type f -name '*.runtime' -print0)
+    done
+}
+
 discover_startup_scripts() {
     local file name rc_local crontab cron_dir init_dir
     local -a files=()
@@ -762,6 +846,7 @@ discover_all() {
     discover_network_scripts
     discover_networkmanager
     discover_managed_metadata
+    discover_routing_helpers
     discover_startup_scripts
 }
 
@@ -776,6 +861,7 @@ kind_label() {
         network-script) printf '传统 network-scripts' ;;
         networkmanager-connection) printf 'NetworkManager 连接' ;;
         he-metadata) printf '脚本元数据' ;;
+        he-runtime) printf '脚本路由运行配置' ;;
         startup-script) printf '启动脚本' ;;
         *) printf '%s' "$1" ;;
     esac
@@ -869,6 +955,41 @@ detect_backend() {
     log "已选择持久化方式：$BACKEND"
 }
 
+ipv6_routing_inventory() {
+    ip -6 -N rule show || return 1
+    ip -6 -N route show table all
+}
+
+select_route_table() {
+    local inventory
+    inventory="$(ipv6_routing_inventory)" || die "无法读取现有 IPv6 路由和策略规则"
+    ROUTE_TABLE="$(awk '
+        /^[0-9]+:/ { used_priority[$1 + 0] = 1 }
+        {
+            for (i = 1; i < NF; i++)
+                if ($i == "table" || $i == "lookup") used_table[$(i+1)] = 1
+        }
+        END {
+            for (id = 16000; id < 20000; id++)
+                if (!used_table[id] && !used_priority[id] && !used_priority[id + 16768]) {
+                    print id
+                    exit
+                }
+        }
+    ' <<<"$inventory")"
+    [[ -n "$ROUTE_TABLE" ]] || die "没有可用的 HE 策略路由表"
+    FALLBACK_PRIORITY="$((ROUTE_TABLE + 16768))"
+}
+
+detect_ipv6_egress() {
+    local defaults route
+    defaults="$(ip -6 route show default)" || return 2
+    [[ -z "$defaults" ]] || return 0
+    # A host can use an alternate routing table for its existing IPv6 egress.
+    route="$(ip -6 route get 2606:4700:4700::1111 2>/dev/null)" || return 1
+    [[ "$route" =~ (^|[[:space:]])src[[:space:]]+[23][[:xdigit:]]*: ]]
+}
+
 preflight_install() {
     need_command ip
     need_command awk
@@ -878,12 +999,14 @@ preflight_install() {
     need_command mktemp
     need_command mv
     need_command rm
+    need_command flock
     need_discovery_commands
     if [[ "$(sysctl -n net.ipv6.conf.all.disable_ipv6 2>/dev/null || printf '0')" == "1" ]]; then
         die "系统已通过 net.ipv6.conf.all.disable_ipv6 禁用 IPv6"
     fi
     detect_local_path
     detect_backend
+    ROUTE_LOCK="$(root_path /run/lock/he-tunnel-routing.lock)"
     case "$BACKEND" in
         systemd) need_command systemctl ;;
         ifupdown)
@@ -892,6 +1015,19 @@ preflight_install() {
             need_command ifquery
             ;;
     esac
+    if (( RESTRICT_INBOUND )); then
+        [[ "$BACKEND" != "ifupdown" ]] || die "--restrict-inbound 仅支持 systemd 和 none"
+        need_command nft
+        GUARD_TABLE="${TUNNEL_NAME//[!a-zA-Z0-9_]/_}_guard"
+        if [[ "$GUARD_TABLE" == [0-9]* ]]; then
+            GUARD_TABLE="he_$GUARD_TABLE"
+        fi
+    fi
+    # Runtime-only tunnels also need a removable record of their IPv6 rules.
+    need_command cat
+    need_command chmod
+    need_command chown
+    need_command ln
 }
 
 is_sit_interface_name() {
@@ -910,7 +1046,7 @@ show_tunnel_diagnostics() {
     warn "当前 $name 接口状态："
     ip -d link show dev "$name" >&2 2>/dev/null || true
     ip -6 address show dev "$name" >&2 2>/dev/null || true
-    ip -6 route show dev "$name" >&2 2>/dev/null || true
+    ip -6 route show table all dev "$name" >&2 2>/dev/null || true
 }
 
 delete_live_interface() {
@@ -924,26 +1060,137 @@ delete_live_interface() {
     try_run ip link delete dev "$name"
 }
 
+create_tunnel_guard() {
+    [[ -n "$GUARD_TABLE" ]] || return 0
+    run nft -f - <<EOF
+create table inet $GUARD_TABLE
+add chain inet $GUARD_TABLE input { type filter hook input priority -5; policy accept; }
+add rule inet $GUARD_TABLE input iifname "$TUNNEL_NAME" ct state established,related accept
+add rule inet $GUARD_TABLE input iifname "$TUNNEL_NAME" meta l4proto ipv6-icmp accept
+add rule inet $GUARD_TABLE input iifname "$TUNNEL_NAME" counter drop
+add chain inet $GUARD_TABLE forward { type filter hook forward priority -5; policy accept; }
+add rule inet $GUARD_TABLE forward iifname "$TUNNEL_NAME" ct state established,related accept
+add rule inet $GUARD_TABLE forward iifname "$TUNNEL_NAME" counter drop
+EOF
+}
+
+remove_tunnel_guard() {
+    [[ -n "$GUARD_TABLE" ]] || return 0
+    if (( DRY_RUN )) || nft list table inet "$GUARD_TABLE" >/dev/null 2>&1; then
+        try_run nft delete table inet "$GUARD_TABLE"
+    fi
+}
+
+remove_ipv6_rules() {
+    local source
+    for source in "${HE_CLIENT_IPV6%/*}/128" "$HE_ROUTED_PREFIX"; do
+        [[ -n "$source" ]] || continue
+        run ip -6 rule del pref "$ROUTE_TABLE" from "$source" lookup "$ROUTE_TABLE" protocol kernel 2>/dev/null || true
+    done
+    run ip -6 rule del pref "$FALLBACK_PRIORITY" from all lookup "$ROUTE_TABLE" protocol kernel 2>/dev/null || true
+}
+
+add_tunnel_routes() {
+    local fallback="$1" source client="${HE_CLIENT_IPV6%/*}"
+    # Keep these tunnel-owned entries when networkd removes foreign IPv6 rules.
+    run ip -6 route add "$HE_SERVER_IPV6/128" dev "$TUNNEL_NAME" src "$client" \
+        table "$ROUTE_TABLE" proto kernel || return 1
+    run ip -6 route add default via "$HE_SERVER_IPV6" dev "$TUNNEL_NAME" src "$client" \
+        metric "$ROUTE_METRIC" table "$ROUTE_TABLE" onlink proto kernel || return 1
+    for source in "$client/128" "$HE_ROUTED_PREFIX"; do
+        [[ -n "$source" ]] || continue
+        run ip -6 rule add pref "$ROUTE_TABLE" from "$source" lookup "$ROUTE_TABLE" protocol kernel || return 1
+    done
+    if (( fallback )); then
+        # This lookup is after main, so any native default that appears later wins.
+        run ip -6 rule add pref "$FALLBACK_PRIORITY" from all lookup "$ROUTE_TABLE" protocol kernel
+    fi
+}
+
+configure_tunnel_routing() (
+    local inventory existing_address fallback=0
+    if (( ! DRY_RUN )); then
+        exec 9>"$ROUTE_LOCK" || return 1
+        flock -x 9 || return 1
+    fi
+    inventory="$(ipv6_routing_inventory)" || return 1
+    if grep -Eq "^($ROUTE_TABLE|$FALLBACK_PRIORITY):|[[:space:]](table|lookup) $ROUTE_TABLE([[:space:]]|$)" <<<"$inventory"; then
+        warn "HE 路由表 $ROUTE_TABLE 或策略优先级已被占用"
+        return 1
+    fi
+    if detect_ipv6_egress; then
+        log "检测到现有 IPv6 出口，保留默认路径；HE 源地址使用路由表 $ROUTE_TABLE"
+    else
+        [[ "$?" == 1 ]] || return 1
+        fallback=1
+        log "未检测到现有 IPv6 出口，HE 路由表 $ROUTE_TABLE 提供后备 IPv6 出口"
+    fi
+    if [[ -n "$HE_ROUTED_ADDRESS" ]]; then
+        if (( ! DRY_RUN )); then
+            existing_address="$(ip -o -6 address show to "$HE_ROUTED_ADDRESS/128")" || return 1
+            if [[ -n "$existing_address" ]]; then
+                warn "业务 IPv6 地址 $HE_ROUTED_ADDRESS 已配置在本机"
+                return 1
+            fi
+        fi
+        run ip -6 address add "$HE_ROUTED_ADDRESS/128" dev "$TUNNEL_NAME" noprefixroute || return 1
+    fi
+    if ! add_tunnel_routes "$fallback"; then
+        remove_ipv6_rules
+        run ip -6 route flush table "$ROUTE_TABLE" dev "$TUNNEL_NAME" 2>/dev/null || true
+        if [[ -n "$HE_ROUTED_ADDRESS" ]]; then
+            run ip -6 address del "$HE_ROUTED_ADDRESS/128" dev "$TUNNEL_NAME" 2>/dev/null || true
+        fi
+        return 1
+    fi
+)
+
+stop_managed_tunnel() {
+    local link
+    if (( ! DRY_RUN )) && ip link show dev "$TUNNEL_NAME" >/dev/null 2>&1; then
+        link="$(ip -d -o link show dev "$TUNNEL_NAME")" || return 1
+        if [[ " $link " != *" alias he-tunnel.sh:$TUNNEL_NAME "* ]]; then
+            warn "接口 $TUNNEL_NAME 缺少脚本的所有权标记，已停止清理"
+            return 1
+        fi
+    fi
+    remove_ipv6_rules
+    delete_live_interface "$TUNNEL_NAME"
+    if (( ! DRY_RUN )) && ip link show dev "$TUNNEL_NAME" >/dev/null 2>&1; then
+        warn "隧道接口 $TUNNEL_NAME 未能删除"
+        return 1
+    fi
+    remove_tunnel_guard
+}
+
 create_live_tunnel() {
     if command -v modprobe >/dev/null 2>&1; then
         run modprobe sit || return 1
     fi
-    run ip tunnel add "$TUNNEL_NAME" mode sit remote "$HE_SERVER_IPV4" local "$LOCAL_IPV4" ttl "$TTL" || return 1
-    run ip link set dev "$TUNNEL_NAME" mtu "$MTU" up || return 1
-    run ip -6 address add "$HE_CLIENT_IPV6" dev "$TUNNEL_NAME" || return 1
-    run ip -6 route replace default via "$HE_SERVER_IPV6" dev "$TUNNEL_NAME" \
-        metric "$ROUTE_METRIC" onlink || return 1
+    create_tunnel_guard || return 1
+    if ! run ip tunnel add "$TUNNEL_NAME" mode sit remote "$HE_SERVER_IPV4" local "$LOCAL_IPV4" ttl "$TTL" dev "$OUT_INTERFACE"; then
+        remove_tunnel_guard
+        return 1
+    fi
+    if ! run ip link set dev "$TUNNEL_NAME" alias "he-tunnel.sh:$TUNNEL_NAME" ||
+       ! run ip link set dev "$TUNNEL_NAME" mtu "$MTU" up ||
+       ! run ip -6 address add "$HE_CLIENT_IPV6" dev "$TUNNEL_NAME" noprefixroute ||
+       ! configure_tunnel_routing; then
+        delete_live_interface "$TUNNEL_NAME"
+        remove_tunnel_guard
+        return 1
+    fi
 }
 
 show_public_addresses() {
-    local public_v4 public_v6
+    local source="$1" public_v4 public_v6
     (( NO_CURL )) && return 0
     command -v curl >/dev/null 2>&1 || {
         warn "未安装 curl，跳过公网地址查询"
         return 0
     }
     public_v4="$(curl -4 --connect-timeout 5 --max-time 12 -fsS https://api.ipify.org 2>/dev/null || true)"
-    public_v6="$(curl -6 --connect-timeout 5 --max-time 12 -fsS https://api64.ipify.org 2>/dev/null || true)"
+    public_v6="$(curl -6 --noproxy '*' --interface "$source" --connect-timeout 5 --max-time 12 -fsS https://api64.ipify.org 2>/dev/null || true)"
     [[ -n "$public_v4" ]] && log "公网 IPv4：$public_v4"
     if [[ -n "$public_v6" ]]; then
         log "公网 IPv6：$public_v6"
@@ -954,6 +1201,8 @@ show_public_addresses() {
 
 run_tunnel_tests() {
     local payload_size=$((MTU - 48))
+    local client="${HE_CLIENT_IPV6%/*}" source route
+    source="${HE_ROUTED_ADDRESS:-$client}"
     (( SKIP_TESTS )) && {
         warn "已按要求跳过连通性测试"
         return 0
@@ -973,70 +1222,128 @@ run_tunnel_tests() {
         return 1
     }
     log "测试 HE IPv6 网关：$HE_SERVER_IPV6"
-    if ! ping -6 -c 3 -W 2 "$HE_SERVER_IPV6"; then
+    if ! ping -6 -I "$client" -c 3 -W 2 "$HE_SERVER_IPV6"; then
         warn "HE IPv6 网关无响应"
         warn "请确认云安全组和主机防火墙双向放行 IPv4 Protocol 41；它不是 TCP/UDP 41 端口"
         warn "抓包诊断：tcpdump -ni $OUT_INTERFACE 'ip proto 41 and host $HE_SERVER_IPV4'"
         return 1
     fi
     log "测试 MTU $MTU（IPv6 ICMP 负载 $payload_size 字节）"
-    ping -6 -M 'do' -c 2 -W 2 -s "$payload_size" "$HE_SERVER_IPV6" ||
+    if ! ping -6 -I "$client" -M do -c 2 -W 2 -s "$payload_size" "$HE_SERVER_IPV6"; then
         warn "MTU 测试失败，可以尝试降低 --mtu"
+        return 1
+    fi
     log "测试公网 IPv6 连通性：$TEST_TARGET"
-    ping -6 -c 3 -W 2 "$TEST_TARGET" ||
-        warn "HE 网关可达，但公网 IPv6 Ping 失败"
-    show_public_addresses
+    route="$(ip -6 -N route get "$TEST_TARGET" from "$source" 2>/dev/null)" || route=""
+    if [[ "$route" != *" dev $TUNNEL_NAME table $ROUTE_TABLE "* ]]; then
+        warn "源地址 $source 的公网路由未使用 HE 路由表 $ROUTE_TABLE"
+        return 1
+    fi
+    if ! ping -6 -I "$source" -c 3 -W 2 "$TEST_TARGET"; then
+        warn "公网 IPv6 Ping 失败，可通过 --test-target 指定可响应 Ping 的 IPv6 地址"
+        return 1
+    fi
+    show_public_addresses "$source"
+}
+
+write_fresh_config() {
+    local target="$1" mode="$2" dir temp
+    dir="${target%/*}"
+    install -d -o root -g root -m 0755 "$dir" || return 1
+    temp="$(mktemp "$dir/.he-tunnel.XXXXXXXX")" || return 1
+    # Publish a complete file without replacing an existing destination.
+    if ! cat >"$temp" ||
+       ! chown root:root "$temp" ||
+       ! chmod "$mode" "$temp" ||
+       ! ln -T -- "$temp" "$target"; then
+        try_run rm -f -- "$temp"
+        return 1
+    fi
+    FRESH_CONFIG_FILES+=("$target")
+    try_run rm -f -- "$temp"
 }
 
 write_metadata() {
-    local dir target temp
-    dir="$(root_path /etc/he-tunnel)"
-    target="$dir/$TUNNEL_NAME.conf"
+    local target
+    target="$(root_path /etc/he-tunnel)/$TUNNEL_NAME.conf"
     if (( DRY_RUN )); then
         log "Would write metadata to $target"
         return 0
     fi
-    install -d -o root -g root -m 0755 "$dir" || return 1
-    temp="$(mktemp)" || return 1
-    if ! cat >"$temp" <<EOF
+    write_fresh_config "$target" 0600 <<EOF
 # $MARKER
 NAME=$TUNNEL_NAME
 SERVER_IPV4=$HE_SERVER_IPV4
 SERVER_IPV6=$HE_SERVER_IPV6
 CLIENT_IPV6=$HE_CLIENT_IPV6
+ROUTED_PREFIX=$HE_ROUTED_PREFIX
+ROUTED_ADDRESS=$HE_ROUTED_ADDRESS
 LOCAL_IPV4=$LOCAL_IPV4
 OUT_INTERFACE=$OUT_INTERFACE
 MTU=$MTU
 TTL=$TTL
 ROUTE_METRIC=$ROUTE_METRIC
+ROUTE_TABLE=$ROUTE_TABLE
 BACKEND=$BACKEND
 EOF
-    then
-        rm -f "$temp"
+}
+
+routing_helper_path() {
+    local directory=/etc/he-tunnel
+    [[ "$BACKEND" != "none" ]] || directory=/run/he-tunnel
+    printf '%s/%s.runtime' "$(root_path "$directory")" "$TUNNEL_NAME"
+}
+
+write_routing_helper() {
+    local target source key
+    target="$(routing_helper_path)"
+    if (( DRY_RUN )); then
+        log "Would write tunnel runtime to $target"
+        return 0
+    fi
+    source="$(mktemp)" || return 1
+    if ! {
+        printf '%s\n' '#!/usr/bin/env bash' "# $MARKER" 'set -Eeuo pipefail' \
+            'DRY_RUN=0 COLOR_RESET="" COLOR_GREEN="" COLOR_YELLOW=""'
+        for key in TUNNEL_NAME HE_SERVER_IPV4 HE_SERVER_IPV6 HE_CLIENT_IPV6 \
+            HE_ROUTED_PREFIX HE_ROUTED_ADDRESS LOCAL_IPV4 OUT_INTERFACE MTU TTL \
+            ROUTE_METRIC ROUTE_TABLE FALLBACK_PRIORITY ROUTE_LOCK GUARD_TABLE; do
+            printf '%s=%q\n' "$key" "${!key}"
+        done
+        # Use the same network actions for the trial and for service startups.
+        declare -f log warn run try_run ipv6_routing_inventory detect_ipv6_egress \
+            is_sit_interface_name delete_live_interface create_tunnel_guard remove_tunnel_guard \
+            remove_ipv6_rules add_tunnel_routes configure_tunnel_routing \
+            create_live_tunnel stop_managed_tunnel
+        cat <<'EOF'
+case "${1:-}" in
+    up) create_live_tunnel ;;
+    down) stop_managed_tunnel ;;
+    routes-up)
+        ip link set dev "$TUNNEL_NAME" alias "he-tunnel.sh:$TUNNEL_NAME"
+        configure_tunnel_routing
+        ;;
+    routes-down) remove_ipv6_rules ;;
+    *) exit 2 ;;
+esac
+EOF
+    } >"$source" || ! bash -n "$source" || ! write_fresh_config "$target" 0700 <"$source"; then
+        try_run rm -f -- "$source"
         return 1
     fi
-    if ! install -o root -g root -m 0600 "$temp" "$target"; then
-        rm -f "$temp"
-        return 1
-    fi
-    rm -f "$temp" || return 1
+    try_run rm -f -- "$source"
 }
 
 write_systemd_unit() {
-    local unit_dir target temp ip_path modprobe_path=""
-    unit_dir="$(root_path /etc/systemd/system)"
-    target="$unit_dir/he-tunnel-$TUNNEL_NAME.service"
-    ip_path="$(command -v ip)"
-    command -v modprobe >/dev/null 2>&1 && modprobe_path="$(command -v modprobe)"
+    local target helper
+    target="$(root_path /etc/systemd/system)/he-tunnel-$TUNNEL_NAME.service"
+    helper="$(routing_helper_path)"
     if (( DRY_RUN )); then
         log "Would write systemd service to $target"
         return 0
     fi
-    install -d -o root -g root -m 0755 "$unit_dir" || return 1
-    temp="$(mktemp)" || return 1
-    if ! {
-        printf '# %s\n' "$MARKER"
-        cat <<EOF
+    write_fresh_config "$target" 0644 <<EOF
+# $MARKER
 [Unit]
 Description=HE IPv6 tunnel $TUNNEL_NAME
 Wants=network-online.target
@@ -1045,41 +1352,23 @@ After=network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-EOF
-        [[ -n "$modprobe_path" ]] && printf 'ExecStartPre=%s sit\n' "$modprobe_path"
-        cat <<EOF
-ExecStartPre=-$ip_path link delete dev $TUNNEL_NAME
-ExecStart=$ip_path tunnel add $TUNNEL_NAME mode sit remote $HE_SERVER_IPV4 local $LOCAL_IPV4 ttl $TTL
-ExecStart=$ip_path link set dev $TUNNEL_NAME mtu $MTU up
-ExecStart=$ip_path -6 address add $HE_CLIENT_IPV6 dev $TUNNEL_NAME
-ExecStart=$ip_path -6 route replace default via $HE_SERVER_IPV6 dev $TUNNEL_NAME metric $ROUTE_METRIC onlink
-ExecStop=-$ip_path link delete dev $TUNNEL_NAME
+ExecStart="$helper" up
+ExecStop="$helper" down
 
 [Install]
 WantedBy=multi-user.target
 EOF
-    } >"$temp"; then
-        rm -f "$temp"
-        return 1
-    fi
-    if ! install -o root -g root -m 0644 "$temp" "$target"; then
-        rm -f "$temp"
-        return 1
-    fi
-    rm -f "$temp" || return 1
 }
 
 write_ifupdown_config() {
-    local dir target temp
-    dir="$(root_path /etc/network/interfaces.d)"
-    target="$dir/he-tunnel-$TUNNEL_NAME"
+    local target helper
+    target="$(root_path /etc/network/interfaces.d)/he-tunnel-$TUNNEL_NAME"
+    helper="$(routing_helper_path)"
     if (( DRY_RUN )); then
         log "Would write ifupdown configuration to $target"
         return 0
     fi
-    install -d -o root -g root -m 0755 "$dir" || return 1
-    temp="$(mktemp)" || return 1
-    if ! cat >"$temp" <<EOF
+    write_fresh_config "$target" 0644 <<EOF || return 1
 # $MARKER
 auto $TUNNEL_NAME
 iface $TUNNEL_NAME inet6 v4tunnel
@@ -1089,60 +1378,55 @@ iface $TUNNEL_NAME inet6 v4tunnel
     local $LOCAL_IPV4
     ttl $TTL
     mtu $MTU
-    up ip -6 route replace default via $HE_SERVER_IPV6 dev $TUNNEL_NAME metric $ROUTE_METRIC onlink
-    down ip -6 route del default via $HE_SERVER_IPV6 dev $TUNNEL_NAME metric $ROUTE_METRIC || true
+    up "$helper" routes-up
+    down "$helper" routes-down
 EOF
-    then
-        rm -f "$temp"
-        return 1
-    fi
-    if ! install -o root -g root -m 0644 "$temp" "$target"; then
-        rm -f "$temp"
-        return 1
-    fi
-    rm -f "$temp" || return 1
-    ifquery "$TUNNEL_NAME" >/dev/null || return 1
+    ifquery "$TUNNEL_NAME" >/dev/null
 }
 
 remove_fresh_managed_files() {
-    local metadata systemd_unit ifupdown_file
-    metadata="$(root_path /etc/he-tunnel)/$TUNNEL_NAME.conf"
-    systemd_unit="$(root_path /etc/systemd/system)/he-tunnel-$TUNNEL_NAME.service"
-    ifupdown_file="$(root_path /etc/network/interfaces.d)/he-tunnel-$TUNNEL_NAME"
-    if command -v systemctl >/dev/null 2>&1; then
-        try_run systemctl disable --now "he-tunnel-$TUNNEL_NAME.service"
+    if (( PERSISTENCE_START_ATTEMPTED )); then
+        case "$BACKEND" in
+            systemd)
+                try_run systemctl disable --now "he-tunnel-$TUNNEL_NAME.service"
+                ;;
+            ifupdown)
+                if ifquery --state "$TUNNEL_NAME" >/dev/null 2>&1; then
+                    try_run ifdown "$TUNNEL_NAME"
+                fi
+                ;;
+        esac
     fi
-    if command -v ifquery >/dev/null 2>&1 &&
-       ifquery --state "$TUNNEL_NAME" >/dev/null 2>&1; then
-        try_run ifdown "$TUNNEL_NAME"
+    if (( TEMP_TUNNEL_ACTIVE )); then
+        stop_managed_tunnel || warn "临时隧道清理失败，请检查 $TUNNEL_NAME"
     fi
-    delete_live_interface "$TUNNEL_NAME"
-    try_run rm -f -- "$metadata" "$systemd_unit" "$ifupdown_file"
-    if command -v systemctl >/dev/null 2>&1; then
-        try_run systemctl daemon-reload
+    if (( ${#FRESH_CONFIG_FILES[@]} )); then
+        try_run rm -f -- "${FRESH_CONFIG_FILES[@]}"
+        if [[ "$BACKEND" == "systemd" ]]; then
+            try_run systemctl daemon-reload
+        fi
     fi
 }
 
 persist_fresh_tunnel() {
+    write_routing_helper || return 1
     case "$BACKEND" in
         systemd)
             write_metadata || return 1
             write_systemd_unit || return 1
-            delete_live_interface "$TUNNEL_NAME"
-            if ! run systemctl daemon-reload ||
-               ! run systemctl enable --now "he-tunnel-$TUNNEL_NAME.service"; then
-                remove_fresh_managed_files
-                return 1
-            fi
+            stop_managed_tunnel || return 1
+            TEMP_TUNNEL_ACTIVE=0
+            run systemctl daemon-reload || return 1
+            PERSISTENCE_START_ATTEMPTED=1
+            run systemctl enable --now "he-tunnel-$TUNNEL_NAME.service"
             ;;
         ifupdown)
             write_metadata || return 1
             write_ifupdown_config || return 1
-            delete_live_interface "$TUNNEL_NAME"
-            if ! run ifup "$TUNNEL_NAME"; then
-                remove_fresh_managed_files
-                return 1
-            fi
+            stop_managed_tunnel || return 1
+            TEMP_TUNNEL_ACTIVE=0
+            PERSISTENCE_START_ATTEMPTED=1
+            run ifup "$TUNNEL_NAME"
             ;;
         none)
             warn "Persistence is disabled; the tunnel will disappear after reboot"
@@ -1158,27 +1442,28 @@ install_fresh_tunnel() {
         die "检测到同名隧道 $TUNNEL_NAME；全新部署不会覆盖旧配置，请先执行彻底卸载"
     fi
     log "未发现同名接口或持久化配置，可以全新部署"
+    select_route_table
 
     section "[2/4] 建立临时隧道并验证参数"
     if ! create_live_tunnel; then
-        delete_live_interface "$TUNNEL_NAME"
         die "临时隧道创建失败，系统未写入持久化配置"
     fi
+    TEMP_TUNNEL_ACTIVE=1
     if ! run_tunnel_tests; then
-        delete_live_interface "$TUNNEL_NAME"
+        stop_managed_tunnel || warn "临时隧道清理失败，请检查 $TUNNEL_NAME"
         die "临时隧道验证失败，已回滚，系统未写入持久化配置"
     fi
 
     section "[3/4] 写入持久化配置并启动"
     if ! persist_fresh_tunnel; then
-        delete_live_interface "$TUNNEL_NAME"
-        die "持久化启动失败，生成的配置已自动清理"
+        remove_fresh_managed_files
+        die "持久化配置写入或启动失败，请检查上方日志"
     fi
 
     section "[4/4] 最终连通性复核"
     if [[ "$BACKEND" != "none" ]] && ! run_tunnel_tests; then
         remove_fresh_managed_files
-        die "持久化后的连通性复核失败，生成的配置已回滚"
+        die "持久化后的连通性复核失败，请检查上方日志"
     fi
     if (( DRY_RUN )); then
         log "预演完成，没有修改系统"
@@ -1277,61 +1562,76 @@ remove_ifupdown_stanza() {
 }
 
 remove_netplan_tunnel() {
-    local file="$1" name="$2" temp count
+    local file="$1" name="$2" temp
     [[ -f "$file" ]] || return 0
-    count="$(netplan_tunnel_names "$file" | awk 'NF {count++} END {print count+0}')"
     backup_file "$file"
     if (( DRY_RUN )); then
         log "Would remove Netplan tunnel $name from $file"
         return 0
     fi
     temp="$(mktemp)"
-    awk -v wanted="$name" -v only="$((count == 1 ? 1 : 0))" '
+    if ! awk -v wanted="$name" '
         function indentation(line, copy) {
             copy = line
             sub(/[^ \t].*$/, "", copy)
             return length(copy)
+        }
+        # Keep the header pending until a surviving child is found.
+        function print_header(empty) {
+            if (header != "") {
+                if (empty) sub(/tunnels:/, "tunnels: {}", header)
+                print header
+                printf "%s", leading
+                header = leading = ""
+            }
         }
         {
             line = $0
             stripped = line
             sub(/^[ \t]*/, "", stripped)
             indent = indentation(line)
-            if (skip) {
-                if (stripped != "" && stripped !~ /^#/ && indent <= target_indent) {
-                    skip = 0
-                } else {
-                    next
-                }
+            content = stripped != "" && stripped !~ /^#/
+            if (in_tunnels && content && indent <= tunnels_indent) {
+                print_header(1)
+                in_tunnels = skip = 0
             }
             if (!in_tunnels && stripped ~ /^tunnels:[ \t]*(#.*)?$/) {
                 in_tunnels = 1
                 tunnels_indent = indent
-                if (only) {
-                    prefix = line
-                    sub(/tunnels:.*/, "tunnels: {}", prefix)
-                    print prefix
-                } else {
-                    print line
-                }
+                entry_indent = -1
+                header = line
                 next
             }
-            if (in_tunnels && stripped != "" && stripped !~ /^#/ && indent <= tunnels_indent) {
-                in_tunnels = 0
-            }
             if (in_tunnels) {
-                key = stripped
-                sub(/:[ \t]*(#.*)?$/, "", key)
-                gsub(/^["\047]|["\047]$/, "", key)
-                if (key == wanted) {
-                    skip = 1
-                    target_indent = indent
-                    next
+                if (content && entry_indent < 0) entry_indent = indent
+                if (content && indent == entry_indent) {
+                    skip = 0
+                    if (stripped ~ /^[^:]+:[ \t]*(#.*)?$/) {
+                        key = stripped
+                        sub(/:[ \t]*(#.*)?$/, "", key)
+                        gsub(/^["\047]|["\047]$/, "", key)
+                        if (key == wanted) {
+                            skip = 1
+                            next
+                        }
+                    }
+                }
+                if (skip && indent > entry_indent && stripped != "") next
+                if (header != "") {
+                    if (!content) {
+                        leading = leading line "\n"
+                        next
+                    }
+                    print_header(0)
                 }
             }
             print line
         }
-    ' "$file" >"$temp"
+        END { print_header(1) }
+    ' "$file" >"$temp"; then
+        rm -f -- "$temp"
+        return 1
+    fi
     replace_preserving_metadata "$file" "$temp"
     log "Removed Netplan tunnel $name from $file"
 }
@@ -1373,7 +1673,9 @@ remove_plain_file() {
     [[ -e "$file" || -L "$file" ]] || return 0
     backup_file "$file"
     run rm -f -- "$file"
-    log "Removed $file"
+    if (( ! DRY_RUN )); then
+        log "Removed $file"
+    fi
 }
 
 resolve_script_path() {
@@ -1485,6 +1787,19 @@ stop_selected_services() {
     done
 }
 
+stop_selected_routing_helpers() {
+    local i target
+    for i in "${!ARTIFACT_NAMES[@]}"; do
+        [[ "${ARTIFACT_KINDS[$i]}" == "he-runtime" ]] || continue
+        name_is_selected "${ARTIFACT_NAMES[$i]}" || continue
+        target="${ARTIFACT_TARGETS[$i]}"
+        if (( ! DRY_RUN )) && [[ "$(stat -c '%u:%a' -- "$target")" != "0:700" ]]; then
+            die "路由运行配置的权限不符合预期：$target"
+        fi
+        run bash "$target" down
+    done
+}
+
 remove_selected_artifacts() {
     local i name kind target
     for i in "${!ARTIFACT_NAMES[@]}"; do
@@ -1505,15 +1820,17 @@ remove_selected_artifacts() {
             startup-script)
                 remove_startup_commands "$target" "$name"
                 ;;
-            systemd-unit|networkd-netdev|networkd-network|network-script|he-metadata)
+            systemd-unit|networkd-netdev|networkd-network|network-script|he-metadata|he-runtime)
                 if [[ "$kind" == "systemd-unit" ]] && artifact_target_has_unselected_name "$target"; then
                     remove_startup_commands "$target" "$name"
                 else
                     remove_plain_file "$target"
                 fi
-                [[ "$kind" == "systemd-unit" ]] && TOUCHED_SYSTEMD=1
-                [[ "$kind" == networkd-* ]] && TOUCHED_NETWORKD=1
-                [[ "$kind" == "network-script" ]] && TOUCHED_NETWORKMANAGER=1
+                case "$kind" in
+                    systemd-unit) TOUCHED_SYSTEMD=1 ;;
+                    networkd-*) TOUCHED_NETWORKD=1 ;;
+                    network-script) TOUCHED_NETWORKMANAGER=1 ;;
+                esac
                 ;;
         esac
     done
@@ -1547,6 +1864,7 @@ uninstall_discovered_tunnels() {
     need_command mv
     need_command rm
     need_command date
+    need_command stat
     need_discovery_commands
 
     discover_all
@@ -1568,6 +1886,7 @@ uninstall_discovered_tunnels() {
 
     RUN_STAMP="$(date -u +%Y%m%dT%H%M%SZ)-$$"
     stop_selected_services
+    stop_selected_routing_helpers
     for name in "${DISCOVERED_NAMES[@]}"; do
         name_is_selected "$name" || continue
         delete_live_interface "$name"
@@ -1634,6 +1953,7 @@ self_destruct_everything() {
     uninstall_discovered_tunnels
     ASSUME_YES="$saved_assume_yes"
     remove_exact_tree "$(root_path /etc/he-tunnel)"
+    remove_exact_tree "$(root_path /run/he-tunnel)"
     remove_exact_tree "$(root_path /var/backups/he-tunnel.sh)"
     remove_self_script
     if (( DRY_RUN )); then
@@ -1660,7 +1980,7 @@ show_status() {
             printf '\n[%s]\n' "$name"
             ip -d link show dev "$name"
             ip -6 address show dev "$name"
-            ip -6 route show dev "$name"
+            ip -6 route show table all dev "$name"
         fi
     done
 }
